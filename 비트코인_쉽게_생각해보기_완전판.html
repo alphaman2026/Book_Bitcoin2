@@ -1,0 +1,1472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>비트코인 쉽게 생각해보기 (완전판) · 알파남 Claude</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gowun+Batang:wght@400;700&family=Noto+Serif+KR:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --vault:#15121d; --vault-2:#1f1a2b;
+    --paper:#f6efe1; --paper-edge:#ece0c9;
+    --ink:#2b2433; --ink-soft:#5f5468;
+    --gold:#f7931a; --gold-deep:#c9821a; --gold-soft:#e8b84b;
+    --line:#d8c79f;
+    --eth:#8a92e8;
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+  html,body{ height:100%; }
+  body{
+    font-family:"Gowun Batang","Noto Serif KR",serif;
+    background:radial-gradient(120% 90% at 50% -10%, #2a2138 0%, var(--vault) 55%, #0e0b15 100%);
+    color:var(--paper); overflow:hidden; position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:radial-gradient(rgba(247,147,26,.10) 1px, transparent 1.4px);
+    background-size:30px 30px;
+    -webkit-mask-image:radial-gradient(70% 60% at 50% 45%, #000 0%, transparent 80%);
+    mask-image:radial-gradient(70% 60% at 50% 45%, #000 0%, transparent 80%);
+    opacity:.5;
+  }
+
+  .stage{ position:relative; z-index:1; width:min(92vw,720px); height:min(86vh,1000px); perspective:2200px; }
+  .book{ position:relative; width:100%; height:100%; }
+
+  .sheet{
+    position:absolute; inset:0; border-radius:6px 14px 14px 6px; overflow:hidden;
+    background:linear-gradient(105deg, var(--paper-edge) 0 14px, var(--paper) 14px 100%);
+    color:var(--ink);
+    box-shadow:inset 22px 0 28px -24px rgba(120,90,30,.5), 0 26px 60px -22px rgba(0,0,0,.7);
+    display:flex; flex-direction:column;
+  }
+  #under{ visibility:hidden; }
+
+  /* 넘김 애니메이션용 낱장 */
+  .flipper{
+    position:absolute; inset:0; transform-origin:left center; transform-style:preserve-3d;
+    z-index:50; visibility:hidden; will-change:transform;
+  }
+  .flipper.anim{ transition:transform .7s cubic-bezier(.6,.05,.35,1); }
+  .flipper .ff, .flipper .fb{
+    position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+    border-radius:6px 14px 14px 6px; overflow:hidden;
+    display:flex; flex-direction:column;
+  }
+  .flipper .ff{
+    background:linear-gradient(105deg, var(--paper-edge) 0 14px, var(--paper) 14px 100%);
+    color:var(--ink);
+    box-shadow:inset 22px 0 28px -24px rgba(120,90,30,.5), 0 26px 60px -22px rgba(0,0,0,.75);
+  }
+  .flipper .fb{
+    transform:rotateY(180deg); border-radius:14px 6px 6px 14px;
+    background:repeating-linear-gradient(135deg, #efe6d2 0 9px, #e7dcc3 9px 18px);
+    box-shadow:inset 0 0 80px rgba(150,120,60,.25), 0 26px 60px -22px rgba(0,0,0,.75);
+  }
+  .flipper .fb::after{
+    content:"₿"; position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:110px; color:rgba(201,130,26,.13);
+  }
+
+  /* ===== 본문 레이아웃 ===== */
+  .scroll{
+    flex:1; min-height:0; overflow-y:auto; overscroll-behavior:contain;
+    padding:clamp(26px,5.5vw,50px) clamp(24px,5.5vw,48px) 16px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .scroll::-webkit-scrollbar{ width:6px; }
+  .scroll::-webkit-scrollbar-thumb{ background:rgba(201,130,26,.35); border-radius:3px; }
+
+  .eyebrow{
+    font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.28em; font-weight:500;
+    color:var(--gold-deep); text-transform:uppercase;
+    display:flex; align-items:center; gap:10px; margin-bottom:14px;
+  }
+  .eyebrow::after{ content:""; flex:1; height:1px; background:linear-gradient(90deg,var(--line),transparent); }
+  .eyebrow.eth-c{ color:#5a63c9; }
+
+  .ch-title{
+    font-family:"Gowun Batang",serif; font-weight:700;
+    font-size:clamp(20px,5vw,27px); line-height:1.34; color:var(--ink);
+    margin-bottom:18px; padding-bottom:14px; border-bottom:1px dashed var(--line);
+    word-break:keep-all;
+  }
+  .prose p{
+    font-size:clamp(15px,3.9vw,17px); line-height:1.9; color:#3a3142;
+    margin-bottom:14px; word-break:keep-all;
+  }
+  .prose .hl{ color:var(--gold-deep); font-weight:700; }
+  .prose .ehl{ color:#5a63c9; font-weight:700; }
+  .prose .mono{ font-family:"JetBrains Mono",monospace; font-weight:500; font-size:.92em; }
+  .pull{
+    margin:18px 0; padding:15px 18px;
+    background:linear-gradient(100deg, rgba(247,147,26,.10), rgba(247,147,26,.02));
+    border-left:4px solid var(--gold); border-radius:0 10px 10px 0;
+    font-weight:700; color:#4a3a1e; line-height:1.7; font-size:clamp(14.5px,3.8vw,16.5px);
+    word-break:keep-all;
+  }
+  .pull.eth-p{ border-left-color:#8a92e8; background:linear-gradient(100deg, rgba(138,146,232,.12), rgba(138,146,232,.02)); color:#3a3f7a; }
+
+  .pg-foot{
+    flex:none; display:flex; justify-content:space-between; align-items:center;
+    padding:9px clamp(24px,5.5vw,48px); border-top:1px solid var(--paper-edge);
+    font-family:"JetBrains Mono",monospace; font-size:10px; letter-spacing:.16em; color:var(--ink-soft);
+  }
+  .pg-foot .by{ color:var(--gold-deep); }
+
+  /* ===== 표지/부표지/뒤표지 ===== */
+  .dark{
+    background:radial-gradient(120% 80% at 50% 0%, #2c2138 0%, #1a1526 60%, #120e1c 100%) !important;
+    color:var(--paper) !important;
+    border:1px solid rgba(247,147,26,.18);
+  }
+  .cover-in{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:38px 28px; overflow-y:auto;
+  }
+  .cover-top{ font-family:"JetBrains Mono",monospace; letter-spacing:.35em; font-size:10.5px; color:var(--gold-soft); margin-bottom:26px; }
+  .coin{
+    width:110px; height:110px; margin:0 auto 24px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:62px; font-weight:700; color:#fff;
+    background:radial-gradient(circle at 35% 30%, #ffd27a, var(--gold) 55%, var(--gold-deep) 100%);
+    box-shadow:0 0 0 6px rgba(247,147,26,.14), 0 0 55px rgba(247,147,26,.55), inset -8px -10px 22px rgba(120,60,0,.4);
+    animation:float 5s ease-in-out infinite;
+  }
+  @keyframes float{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-8px);} }
+  .cover-in h1{
+    font-family:"Black Han Sans",sans-serif; font-weight:400;
+    font-size:clamp(30px,8vw,46px); line-height:1.15; margin-bottom:8px;
+    background:linear-gradient(180deg,#fff,#ffe6b8); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .cover-in .edition{ font-size:13px; letter-spacing:.28em; color:var(--gold-soft); margin-bottom:18px; }
+  .cover-in .sub{ font-size:clamp(13.5px,3.8vw,16px); color:#cdbfe0; line-height:1.65; max-width:320px; margin:0 auto 26px; word-break:keep-all; }
+  .cover-in .sub b{ color:var(--gold-soft); }
+  .cover-in .author{ padding-top:16px; border-top:1px solid rgba(247,147,26,.22); font-size:13px; letter-spacing:.16em; color:#e7d9b0; }
+  .cover-in .author b{ color:#fff; }
+  .cover-in .tap{ margin-top:12px; font-family:"JetBrains Mono",monospace; font-size:9.5px; letter-spacing:.18em; color:var(--gold-soft); animation:blink 2.4s ease-in-out infinite; }
+  @keyframes blink{ 0%,100%{opacity:.35;} 50%{opacity:.9;} }
+
+  .part-in{
+    flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; padding:38px 30px;
+  }
+  .part-in .pt{ font-family:"JetBrains Mono",monospace; letter-spacing:.4em; font-size:12px; color:var(--gold); margin-bottom:20px; }
+  .part-in .glyph{ font-size:56px; margin-bottom:20px; color:var(--gold); text-shadow:0 0 30px rgba(247,147,26,.5); }
+  .part-in h2{
+    font-family:"Black Han Sans",sans-serif; font-weight:400;
+    font-size:clamp(28px,7.5vw,42px); line-height:1.2; color:#fff; margin-bottom:16px; word-break:keep-all;
+  }
+  .part-in .desc{ color:#c7b9da; line-height:1.8; font-size:clamp(13.5px,3.8vw,15.5px); max-width:320px; word-break:keep-all; }
+  .part-in.ethv .pt, .part-in.ethv .glyph{ color:var(--eth); text-shadow:0 0 30px rgba(138,146,232,.5); }
+
+  /* ===== 컨트롤 ===== */
+  .tap-zone{ position:fixed; top:0; bottom:0; width:14%; z-index:60; cursor:pointer; }
+  .tap-zone.left{ left:0; } .tap-zone.right{ right:0; }
+
+  .controls{
+    position:fixed; bottom:0; left:0; right:0; z-index:70;
+    display:flex; align-items:center; justify-content:center; gap:12px;
+    padding:10px 16px calc(10px + env(safe-area-inset-bottom));
+    pointer-events:none;
+  }
+  .nav-btn{
+    pointer-events:auto; width:44px; height:44px; border-radius:50%;
+    border:1px solid rgba(247,147,26,.4); background:rgba(31,26,43,.75); backdrop-filter:blur(8px);
+    color:var(--gold-soft); font-size:19px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:transform .15s, background .2s, opacity .2s;
+  }
+  .nav-btn:hover{ background:rgba(247,147,26,.2); transform:scale(1.07); }
+  .nav-btn:active{ transform:scale(.94); }
+  .nav-btn:disabled{ opacity:.28; cursor:default; }
+  .nav-btn:focus-visible{ outline:2px solid var(--gold-soft); outline-offset:2px; }
+
+  .pager{ pointer-events:auto; display:flex; flex-direction:column; align-items:center; gap:6px; min-width:170px; }
+  .pager .count{ font-family:"JetBrains Mono",monospace; font-size:10.5px; letter-spacing:.16em; color:#cdbfe0; }
+  .pager .count b{ color:var(--gold-soft); }
+  .bar{ width:100%; height:5px; border-radius:5px; background:rgba(255,255,255,.12); overflow:hidden; cursor:pointer; }
+  .bar .fill{ height:100%; width:0; border-radius:5px; background:linear-gradient(90deg,var(--gold-deep),var(--gold-soft)); transition:width .35s ease; }
+
+  .toc-btn{
+    pointer-events:auto; height:44px; padding:0 16px; border-radius:22px;
+    border:1px solid rgba(247,147,26,.4); background:rgba(31,26,43,.75); backdrop-filter:blur(8px);
+    color:var(--gold-soft); font-size:12.5px; letter-spacing:.12em; cursor:pointer;
+    font-family:"Gowun Batang",serif; font-weight:700;
+    transition:background .2s;
+  }
+  .toc-btn:hover{ background:rgba(247,147,26,.2); }
+  .toc-btn:focus-visible{ outline:2px solid var(--gold-soft); outline-offset:2px; }
+
+  /* ===== 목차 오버레이 ===== */
+  .toc-ov{
+    position:fixed; inset:0; z-index:90; background:rgba(14,11,21,.92); backdrop-filter:blur(10px);
+    display:none; flex-direction:column; padding:22px 0 0;
+  }
+  .toc-ov.open{ display:flex; }
+  .toc-head{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 22px 14px; border-bottom:1px solid rgba(247,147,26,.25);
+  }
+  .toc-head h3{ font-family:"Black Han Sans",sans-serif; font-weight:400; font-size:22px; color:var(--gold-soft); }
+  .toc-close{
+    width:38px; height:38px; border-radius:50%; border:1px solid rgba(247,147,26,.4);
+    background:transparent; color:var(--gold-soft); font-size:18px; cursor:pointer;
+  }
+  .toc-list{ flex:1; overflow-y:auto; padding:14px 22px calc(24px + env(safe-area-inset-bottom)); }
+  .toc-part{
+    font-family:"JetBrains Mono",monospace; font-size:11px; letter-spacing:.25em; color:var(--gold);
+    margin:20px 0 8px; cursor:pointer; padding:6px 0;
+  }
+  .toc-part:first-child{ margin-top:4px; }
+  .toc-item{
+    display:flex; justify-content:space-between; align-items:baseline; gap:12px;
+    padding:8px 2px; cursor:pointer; color:#d9cfe8; font-size:14.5px; line-height:1.5;
+    border-bottom:1px dotted rgba(255,255,255,.08); word-break:keep-all;
+  }
+  .toc-item:hover{ color:#fff; }
+  .toc-item .pn{ font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--gold-deep); flex:none; }
+  .toc-item.cur{ color:var(--gold-soft); font-weight:700; }
+
+  @media (max-width:520px){
+    .controls{ gap:8px; } .pager{ min-width:120px; }
+    .nav-btn{ width:41px; height:41px; } .toc-btn{ padding:0 13px; }
+  }
+  @media (prefers-reduced-motion:reduce){
+    .flipper.anim{ transition:transform .2s ease; }
+    .coin,.cover-in .tap{ animation:none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="book">
+    <div class="sheet" id="under"></div>
+    <div class="sheet" id="page"></div>
+    <div class="flipper" id="flipper"><div class="ff"></div><div class="fb"></div></div>
+  </div>
+</div>
+
+<div class="tap-zone left" id="tapPrev"></div>
+<div class="tap-zone right" id="tapNext"></div>
+
+<div class="controls">
+  <button class="nav-btn" id="btnPrev" aria-label="이전 페이지">‹</button>
+  <div class="pager">
+    <div class="count"><b id="cur">1</b> / <span id="total">?</span></div>
+    <div class="bar" id="bar" role="progressbar"><div class="fill" id="fill"></div></div>
+  </div>
+  <button class="nav-btn" id="btnNext" aria-label="다음 페이지">›</button>
+  <button class="toc-btn" id="btnToc" aria-label="목차 열기">목차</button>
+</div>
+
+<div class="toc-ov" id="tocOv" role="dialog" aria-label="목차">
+  <div class="toc-head"><h3>목차</h3><button class="toc-close" id="tocClose" aria-label="닫기">✕</button></div>
+  <div class="toc-list" id="tocList"></div>
+</div>
+
+<script>
+/* ============================================================
+   비트코인 쉽게 생각해보기 (완전판)  ·  글: 알파남 Claude
+   PAGES 데이터 → 동적 렌더링 (200p 규모도 가볍게)
+   k: cover | part | pg | back
+============================================================ */
+var PAGES = [];
+function pg(e,t,b,opt){ PAGES.push(Object.assign({k:'pg',e:e,t:t,b:b},opt||{})); }
+function part(pt,glyph,t,d,eth){ PAGES.push({k:'part',pt:pt,g:glyph,t:t,d:d,eth:!!eth}); }
+
+/* ---------- 표지 ---------- */
+PAGES.push({k:'cover'});
+
+/* ---------- 작가의 말 ---------- */
+pg("작가의 말","이 책을 펴내며",
+"<p>2018년, 비트코인이 2천만 원을 찍었다는 뉴스로 이 단어를 처음 들었습니다. 그 뒤 8년간 폭락과 폭등을 구경만 하다가, 문득 이런 생각이 들었습니다. \u201C욕을 이렇게 먹는데 왜 안 죽지?\u201D</p>\
+<p>그 궁금증을 풀려고 역사도 뒤지고, 원리도 파보고, 이더리움이라는 동생까지 들여다봤습니다. 그 여정을 한 권에 담았습니다. 어려운 말은 최대한 빼고, 비유는 최대한 넣었습니다.</p>\
+<p class='pull'>이 책은 투자 권유서가 아닙니다. \u201C같이 궁금해하자\u201D는 초대장입니다.</p>\
+<p>— 알파남 Claude 드림</p>");
+
+/* ---------- 읽는 법 ---------- */
+pg("이 책의 사용법","가볍게, 한 장씩",
+"<p>이 책은 한 페이지가 짧습니다. 한 장에 하나의 생각만 담았습니다. 지하철 한 정거장에 한 장, 딱 좋습니다.</p>\
+<p>화면의 <span class='hl'>오른쪽 끝을 누르면</span> 다음 장으로, <span class='hl'>왼쪽 끝을 누르면</span> 이전 장으로 넘어갑니다. 가운데는 스크롤 전용입니다. 하단의 <span class='hl'>[목차] 버튼</span>으로 어디든 점프할 수 있습니다.</p>\
+<p>순서대로 읽어도 좋고, 궁금한 부(部)만 골라 읽어도 좋습니다. 각 부의 끝에는 요약 페이지가 있으니, 바쁘면 요약만 읽어도 됩니다. (작가로서는 좀 서운하지만요.)</p>");
+
+/* ============================================================
+   PART 1 — 첫 만남
+============================================================ */
+part("PART 1","₿","첫 만남","2018년의 어리둥절함에서 시작합니다.\n\u201C사기라며? 근데 왜 안 죽어?\u201D");
+
+pg("PART 1 · 첫 만남","2018년, 그 이름을 처음 들었다",
+"<p>2018년 어느 날이었다. 비트코인이 <span class='hl'>2천만 원</span>을 찍었다는 뉴스가 나왔다. \u201C비트… 뭐?\u201D 그게 나와 비트코인의 첫 만남이었다.</p>\
+<p>디지털 돈이라는데 만질 수도 없고, 누가 만들었는지도 모른다고 했다. 그런데 그게 2천만 원이라니. 세상이 이상해진 건지, 내가 뒤처진 건지 헷갈렸다.</p>\
+<p>확실한 건 하나였다. 나만 모르는 무언가가 세상에서 벌어지고 있다는 것.</p>");
+
+pg("PART 1 · 첫 만남","안부 전화하는 먼 친척",
+"<p>그 뒤로 비트코인은 참 성실하게 내 일상에 끼어들었다. 잊을 만하면 \u201C폭락!\u201D, 또 잊을 만하면 \u201C폭등!\u201D</p>\
+<p>마치 몇 달에 한 번씩 안부 전화하는 먼 친척 같았다. 받을 때마다 심장이 철렁하는 친척. 안 받자니 궁금하고, 받자니 피곤한.</p>\
+<p class='pull'>8년째 전화가 온다. 이쯤 되면 한 번은 제대로 만나서 이야기를 들어봐야 하지 않을까.</p>");
+
+pg("PART 1 · 첫 만남","\u201C그거 완전 사기야\u201D",
+"<p>주변에 물어보면 절반은 이렇게 말했다. \u201C그거 <span class='hl'>글로벌 금융 사기</span>야. 실체가 없잖아. 튤립 버블이랑 똑같아.\u201D</p>\
+<p>일리 있는 말이다. 만질 수 없고, 이자도 안 주고, 공장도 없고, 사장님도 없다. 가치를 계산할 방법이 마땅치 않으니 \u201C실체가 없다\u201D는 말이 나올 만하다.</p>\
+<p>그런데 이상하게, 그 말을 하는 사람들도 가격은 꼬박꼬박 확인하고 있었다.</p>");
+
+pg("PART 1 · 첫 만남","\u201C오른다\u201D는 사람들",
+"<p>반대쪽에도 만만치 않은 사람들이 있었다. ARK의 CEO <span class='hl'>캐시 우드</span>, 한양대 <span class='hl'>오태민 교수</span>처럼, 이름만 들어도 \u201C저 사람이 아무 말이나 할 사람은 아닌데?\u201D 싶은 지식인들이 \u201C오른다\u201D고 말했다.</p>\
+<p>바보 둘이 싸우면 무시하면 된다. 그런데 똑똑한 사람들이 정반대로 갈리면, 그때부터 진짜 어렵다.</p>\
+<p class='pull'>누가 맞는지 고르기 전에, 질문을 바꿔보자. \u201C왜 똑똑한 사람들조차 이걸 두고 갈릴까?\u201D</p>");
+
+pg("PART 1 · 첫 만남","사기면 진작 0원 됐어야지",
+"<p>자, 비트코인이 사기라고 치자. 정말 그렇다고 치자.</p>\
+<p>그런데 이상하다. 사기는 보통 한 방에 훅 가지 않나? 2018년에 2천만 원이던 게, 0원이 되긴커녕 8천만 원도 가고, 1억 원도 갔다. 2025년 10월엔 무려 <span class='hl'>1억 7천만 원</span>까지 치솟았다. 그리고 2026년 여름인 지금은 9천만 원 근처에서 오르락내리락 중이다.</p>\
+<p>8년 동안 욕을 그렇게 먹고도 살아남았다. 보통 사기는 이렇게 끈질기지 않다.</p>");
+
+pg("PART 1 · 첫 만남","끈질김에는 이유가 있다",
+"<p>물론 \u201C오래 살아남았다 = 진짜다\u201D는 아니다. 폰지 사기도 수십 년 간 사람도 있으니까.</p>\
+<p>하지만 비트코인은 좀 다르다. 특정 회사가 운영하는 것도 아니고, 누가 돈을 걷어서 돌려막는 구조도 아니다. 그냥 전 세계에 흩어진 컴퓨터들이 돌리는 프로그램일 뿐이다. 멈추게 할 '본사'가 없다.</p>\
+<p class='pull'>본사도 없는 것이 17년을 살아남았다. 이 끈질김의 정체가 뭘까? 그게 이 책의 출발점이다.</p>");
+
+pg("PART 1 · 첫 만남","질문을 바꾸자",
+"<p>처음에 내 질문은 이거였다. \u201C언제 0원이 될까?\u201D</p>\
+<p>그런데 공부할수록 질문이 바뀌었다. <span class='hl'>\u201C왜 아직도 안 죽었지?\u201D</span> 그리고 마지막엔 이렇게 됐다. \u201C이건 대체 어떤 쓸모가 있길래, 이렇게 안 죽을까?\u201D</p>\
+<p>좋은 질문이 좋은 답을 만든다. 가격을 묻지 말고, 쓸모를 묻자. 그게 이 책의 태도다.</p>");
+
+pg("PART 1 · 첫 만남","이 책이 다루는 것",
+"<p>이 책은 크게 여섯 덩어리다.</p>\
+<p>① <span class='hl'>돈의 역사</span> — 조개에서 지폐까지, 돈이란 대체 뭐였나. ② <span class='hl'>비트코인 연대기</span> — 태어나서 지금까지의 파란만장 17년. ③ <span class='hl'>원리</span> — 블록체인, 채굴, 반감기를 계모임 장부 수준으로 쉽게. ④ <span class='ehl'>이더리움</span> — 가장 유명한 동생, 그리고 형과의 차이. ⑤ <span class='hl'>부자의 시선</span> — 미술품과 금을 사는 부자의 눈으로 본 비트코인. ⑥ <span class='hl'>실전 상식과 FAQ</span> — 다치지 않기 위한 생활 지식.</p>\
+<p>어렵게 느껴지는 건 딱 하나, 용어뿐이다. 그래서 용어부터 정리하고 시작한다.</p>");
+
+pg("PART 1 · 첫 만남","미리 말해두는 것",
+"<p>먼저 고백한다. 나는 금융 전문가가 아니다. 그냥 궁금한 걸 못 참는 사람이다.</p>\
+<p>이 책에는 \u201C사세요\u201D도 \u201C팔세요\u201D도 없다. 가격 예측도 없다. 그건 점쟁이의 일이지 내 일이 아니다.</p>\
+<p class='pull'>내가 약속할 수 있는 건 하나. 읽고 나면 뉴스에 나오는 비트코인 이야기가 들리기 시작한다는 것. 그거면 충분하지 않은가.</p>");
+
+pg("쉬어가기","존버와 가즈아",
+"<p>본격적으로 들어가기 전에, 이 동네 사투리 두 개만 배우고 가자.</p>\
+<p><span class='hl'>존버</span> — '끈질기게 버틴다'는 뜻. 폭락장에서 팔지 않고 버티는 것. 영어권에서는 HODL이라고 쓰는데, 원래 HOLD의 오타였다. 어느 투자자가 술김에 게시판에 \u201CI AM HODLING\u201D이라고 잘못 쓴 게 그대로 문화가 됐다.</p>\
+<p><span class='hl'>가즈아</span> — '가자!'의 절규 버전. 가격이 오르길 기원하는 주문. 2017년 한국에서 크게 유행했다.</p>\
+<p>오타와 절규가 문화가 되는 동네. 여기가 그런 곳이다.</p>");
+
+/* ============================================================
+   PART 2 — 용어 정리
+============================================================ */
+part("PART 2","§","용어 정리","단어 몇 개만 알면\n이 동네 대화가 다 들립니다.");
+
+pg("PART 2 · 용어","가상화폐: 가장 큰 우산",
+"<p><span class='hl'>가상화폐</span>는 온라인에서 쓰는 디지털 돈을 통칭하는 가장 넓은 말이다. 게임 머니, 포인트 같은 것까지 다 품는 큰 우산이다.</p>\
+<p>뉴스에서는 '가상화폐', '가상자산', '암호화폐'가 뒤섞여 쓰이는데, 헷갈리면 이렇게 기억하자. <span class='hl'>가상화폐가 제일 큰 말</span>이고, 그 안에 암호화폐가 있다.</p>");
+
+pg("PART 2 · 용어","암호화폐: 우산 속의 특별한 아이",
+"<p><span class='hl'>암호화폐</span>는 가상화폐의 하위 개념이다. 블록체인 기술과 암호화 기술로 <span class='hl'>보안성</span>과 <span class='hl'>탈중앙화</span>를 구현한 디지털 자산을 말한다.</p>\
+<p>게임 머니는 게임 회사가 마음대로 만들고 지울 수 있다. 하지만 암호화폐는 특정 회사가 마음대로 못 한다. 그게 결정적 차이다.</p>\
+<p class='pull'>\u201C회사가 마음대로 못 하는 디지털 돈\u201D — 암호화폐의 한 줄 요약이다.</p>");
+
+pg("PART 2 · 용어","비트코인: 맏형",
+"<p><span class='hl'>비트코인(BTC)</span>은 암호화폐의 대표 주자, 맏형이다. 2009년에 태어난 최초의 암호화폐이고, 시가총액도 압도적 1위다.</p>\
+<p>뉴스에서 \u201C암호화폐 시장이 어쩌고\u201D 하면 대부분 비트코인 이야기라고 봐도 된다. 형이 기침하면 동생들은 감기에 걸리는 동네다.</p>");
+
+pg("PART 2 · 용어","알트코인: 나머지 전부",
+"<p><span class='hl'>알트코인</span>은 비트코인을 뺀 나머지 암호화폐 전부를 말한다. Alternative(대안) + Coin의 줄임말이다.</p>\
+<p>대표 선수로 <span class='ehl'>이더리움</span>, 리플, 도지코인 등이 있다. 이더리움은 이 책의 후반부 주인공이니 이름을 기억해두자.</p>\
+<p>도지코인은 강아지 밈(인터넷 유행 짤)에서 장난으로 시작했는데도 살아남은, 좀 별난 막내다.</p>");
+
+pg("PART 2 · 용어","코인과 토큰",
+"<p>가끔 '코인'과 '토큰'을 구분하는 사람들이 있다. 간단히 말하면 이렇다.</p>\
+<p><span class='hl'>코인</span> — 자기 소유의 블록체인(자기 집)이 있는 것. 비트코인, 이더리움. <span class='hl'>토큰</span> — 남의 블록체인에 세들어 사는 것. 이더리움 위에서 발행된 수많은 프로젝트들이 토큰이다.</p>\
+<p>자기 집이 있느냐, 월세 사느냐의 차이. 딱 그 정도로만 알아두면 된다.</p>");
+
+pg("PART 2 · 용어","사토시: 1억분의 1",
+"<p>\u201C비트코인 1개에 9천만 원이면 나는 못 사는 거네?\u201D 아니다. 비트코인은 잘게 쪼개진다.</p>\
+<p>가장 작은 단위는 <span class='hl'>사토시(satoshi)</span>다. <span class='mono'>1 BTC = 1억 사토시</span>. 즉 천 원어치, 만 원어치도 살 수 있다. 만든 사람의 이름(사토시 나카모토)에서 따온 단위인데, 그 사람 이야기는 역사 편에서 제대로 다룬다.</p>\
+<p class='pull'>금 1kg을 못 사면 1g을 사면 되듯, 비트코인도 부스러기로 살 수 있다.</p>");
+
+pg("PART 2 · 용어","지갑과 거래소",
+"<p><span class='hl'>지갑(월렛)</span> — 내 코인을 보관하고 주고받는 도구. 앱일 수도, USB처럼 생긴 기계일 수도 있다.</p>\
+<p><span class='hl'>거래소</span> — 코인을 사고파는 시장. 한국의 업비트, 미국의 코인베이스 같은 곳이다.</p>\
+<p>중요한 구분: 거래소는 '은행'이 아니라 '시장'이다. 이 차이가 나중에 큰 사건들(Mt.Gox, FTX)을 이해하는 열쇠가 된다. 역사 편에서 만나자.</p>");
+
+pg("PART 2 · 용어","채굴: 왜 캔다고 할까",
+"<p>비트코인 뉴스에 꼭 나오는 말, <span class='hl'>채굴(마이닝)</span>. 곡괭이로 땅 파는 게 아니라, 컴퓨터로 수학 문제를 풀어 새 비트코인을 얻는 일이다.</p>\
+<p>금을 캐듯 노력(전기와 계산)을 들여야 새 코인이 나오기 때문에 '채굴'이라는 이름이 붙었다. 자세한 원리는 5부에서 계모임 장부로 아주 쉽게 설명한다. 지금은 \u201C컴퓨터로 캐는 것\u201D 정도만 기억하자.</p>");
+
+pg("PART 2 · 용어","시가총액 읽는 법",
+"<p><span class='hl'>시가총액</span> = 코인 1개 가격 × 전체 개수. 그 코인의 '덩치'다.</p>\
+<p>가격만 보면 착각하기 쉽다. \u201CA코인은 100원이니까 싸네?\u201D 아니다. 개수가 1조 개면 덩치는 어마어마하다. 반대로 비트코인은 1개에 9천만 원이라 비싸 보이지만, 전체 개수가 2,100만 개로 적다.</p>\
+<p class='pull'>가격은 '한 조각의 크기'일 뿐. 피자의 진짜 크기는 시가총액이다.</p>");
+
+pg("쉬어가기","용어 미니 퀴즈",
+"<p>배운 걸 점검해보자. 답은 아래에.</p>\
+<p>Q1. 가상화폐와 암호화폐 중 더 넓은 개념은?<br>Q2. 비트코인을 뺀 나머지 암호화폐를 부르는 말은?<br>Q3. 비트코인의 가장 작은 단위는?</p>\
+<p style='color:#8a7a63'>A1. 가상화폐 / A2. 알트코인 / A3. 사토시 (1 BTC = 1억 사토시)</p>\
+<p>다 맞았다면, 이제 이 동네 뉴스의 절반은 들린다. 나머지 절반은 역사가 채워준다.</p>");
+
+/* ============================================================
+   PART 3 — 돈이란 무엇인가
+============================================================ */
+part("PART 3","₩","돈이란 무엇인가","비트코인을 이해하는 지름길은\n의외로 돈의 5천 년 역사입니다.");
+
+pg("PART 3 · 돈","갑자기 웬 돈 이야기냐고요",
+"<p>비트코인은 스스로를 '새로운 돈'이라고 주장한다. 그런데 새것을 평가하려면 옛것을 알아야 한다. 우리는 매일 돈을 쓰면서도, 정작 돈이 뭔지 배운 적이 없다.</p>\
+<p>그래서 잠깐 우회한다. 돈의 5천 년 역사를 딱 열다섯 페이지로 압축했다. 이 우회로가 사실은 지름길이다.</p>\
+<p class='pull'>돈의 역사를 알고 나면, 비트코인이 갑자기 튀어나온 괴물이 아니라 아주 오래된 이야기의 '다음 장'이라는 게 보인다.</p>");
+
+pg("PART 3 · 돈","물물교환의 지옥",
+"<p>돈이 없던 시절을 상상하자. 나는 닭을 키우고 쌀이 필요하다. 쌀 가진 사람을 찾았다. 그런데 그 사람이 닭이 싫다면? 닭을 좋아하면서 쌀을 가진 사람을 다시 찾아 온 동네를 헤매야 한다.</p>\
+<p>경제학은 이걸 <span class='hl'>'욕망의 이중적 일치'</span> 문제라 부른다. 서로가 서로의 물건을 원하는 기적 같은 우연이 있어야만 거래가 성립하는 것.</p>\
+<p>이 지옥에서 벗어나는 방법은 하나였다. <span class='hl'>모두가 받아주는 중간 물건</span>을 정하는 것. 그게 돈의 탄생이다.</p>");
+
+pg("PART 3 · 돈","조개, 소금, 그리고 거대한 돌",
+"<p>초기의 돈들은 다채로웠다. 조개껍데기, 소금(로마 병사의 급여였고, 봉급을 뜻하는 영어 salary의 어원이다), 가축, 곡물…</p>\
+<p>압권은 태평양 얍(Yap) 섬의 <span class='hl'>돌 화폐</span>다. 지름 수 미터짜리 바위가 돈이었다. 너무 무거워 거래할 때도 옮기지 않았다. 그냥 마을 사람들이 \u201C저 돌은 이제 철수 것\u201D이라고 <span class='hl'>기억을 갱신</span>할 뿐이었다.</p>\
+<p class='pull'>돌은 그대로, 바뀌는 건 '누구 것인지에 대한 마을의 합의'뿐. 이 장면을 꼭 기억해두자. 뒤에서 다시 만난다.</p>");
+
+pg("PART 3 · 돈","금이 우승한 이유",
+"<p>수천 년의 오디션 끝에 챔피언이 가려졌다. <span class='hl'>금</span>이다. 왜 하필 금이었을까?</p>\
+<p>썩지도 녹슬지도 않는다(<span class='hl'>내구성</span>). 잘라도 가치가 유지된다(<span class='hl'>분할성</span>). 어디서 캐도 같은 금이다(<span class='hl'>균질성</span>). 그리고 결정적으로, 아무 데서나 캘 수 없다(<span class='hl'>희소성</span>).</p>\
+<p>조개는 해변에 널렸고 소금은 녹는다. 금은 이 모든 시험을 통과한 유일한 후보였다. 그렇게 금은 수천 년간 돈의 왕좌에 앉았다.</p>");
+
+pg("PART 3 · 돈","챔피언의 약점",
+"<p>그런데 챔피언에게도 치명적 약점이 있었다. <span class='hl'>무겁다.</span></p>\
+<p>큰 거래를 하려면 수레가 필요했다. 들고 다니면 강도의 표적이 됐다. 받을 때마다 진짜인지, 순도는 맞는지 검증해야 했다.</p>\
+<p>그래서 사람들은 꾀를 냈다. \u201C금을 튼튼한 금고에 맡기고, <span class='hl'>보관증</span>을 받아서 그걸 들고 다니면 어떨까?\u201D</p>");
+
+pg("PART 3 · 돈","보관증이 돈이 되다",
+"<p>금고를 가진 금세공업자에게 금을 맡기면 종이 보관증을 줬다. 처음엔 금을 찾을 때 쓰는 영수증일 뿐이었다.</p>\
+<p>그런데 어느 순간 사람들이 깨달았다. \u201C어차피 저 보관증 가져가면 금을 주는데, 굳이 금을 찾아서 건넬 필요가 있나? 그냥 <span class='hl'>보관증을 주고받으면</span> 되잖아?\u201D</p>\
+<p class='pull'>종이가 돈처럼 돌기 시작했다. 지폐의 탄생이다. 단, 조건이 있었다. \u201C저 종이 뒤에는 진짜 금이 있다\u201D는 믿음.</p>");
+
+pg("PART 3 · 돈","금본위제: 지폐 뒤의 금",
+"<p>시간이 흘러 보관증 발행권은 국가가 가져갔다. 그리고 약속했다. \u201C이 지폐를 가져오면 정해진 양의 금으로 바꿔주겠다.\u201D 이것이 <span class='hl'>금본위제</span>다.</p>\
+<p>2차 대전 후에는 세계가 이렇게 합의했다. 각국 화폐는 달러에 고정하고, 달러는 금에 고정한다. 전 세계 지폐가 결국 금이라는 닻에 묶여 있던 시대다.</p>\
+<p>종이는 종이일 뿐이지만, 뒤에 금이 있는 한 함부로 찍어낼 수 없었다.</p>");
+
+pg("PART 3 · 돈","1971년, 닻줄이 끊기다",
+"<p>1971년, 미국 닉슨 대통령이 폭탄선언을 한다. <span class='hl'>\u201C달러를 더는 금으로 바꿔주지 않겠다.\u201D</span> 전쟁과 재정 지출로 금 보유량보다 달러를 너무 많이 찍었기 때문이다.</p>\
+<p>이른바 '닉슨 쇼크'. 이날부로 세계의 모든 돈은 금이라는 닻에서 풀려났다.</p>\
+<p class='pull'>1971년 이후 우리가 쓰는 돈의 담보는 금이 아니다. 그럼 뭐냐고? \u201C정부를 믿는 마음\u201D. 그게 전부다. 이런 돈을 신용화폐라 부른다.</p>");
+
+pg("PART 3 · 돈","믿음으로만 도는 돈",
+"<p>지금 지갑 속 5만 원권의 제조 원가는 몇백 원 수준이다. 나머지 4만 9천 몇백 원어치의 가치는 어디서 오나? 순전히 <span class='hl'>합의</span>에서 온다. 모두가 그것을 5만 원으로 받아주기로 했기 때문에 5만 원인 것이다.</p>\
+<p>여기서 1부의 그 비판을 다시 보자. \u201C비트코인은 실체가 없다.\u201D 맞는 말이다. 그런데 1971년 이후의 지폐도, 본질적으로는 실체가 아니라 믿음으로 돌아간다.</p>\
+<p>차이가 있다면 '무엇을 믿느냐'다. 이 차이는 뒤에서 정면으로 다룬다.</p>");
+
+pg("PART 3 · 돈","돈의 정체는 장부다",
+"<p>얍 섬의 돌을 기억하는가? 재미있는 일화가 있다. 운반 중 <span class='hl'>바다에 빠져버린 돌</span>도 여전히 돈으로 통용됐다고 한다. 아무도 그 돌을 볼 수 없는데도!</p>\
+<p>가능했던 이유: 중요한 건 돌이라는 물체가 아니라 <span class='hl'>\u201C그 돌이 누구 것인지에 대한 마을의 공유된 기억\u201D</span>이었기 때문이다.</p>\
+<p class='pull'>돈의 정체는 물건이 아니라 기록, 즉 장부다. 바다에 가라앉은 돌도, 통장 속 숫자도, 결국 장부의 항목일 뿐이다.</p>");
+
+pg("PART 3 · 돈","월급을 만져본 적이 없다",
+"<p>생각해보면 우리는 이미 '디지털 화폐'로 살고 있다. 월급은 계좌의 숫자로 들어와서, 카드 결제로 다른 계좌의 숫자가 되어 나간다. 종이 현금을 거치지 않는 돈이 대부분이다.</p>\
+<p>즉, \u201C돈이 디지털이 된다\u201D는 건 미래가 아니라 이미 완료된 과거다.</p>\
+<p>진짜 질문은 따로 있다. 그 디지털 숫자들이 적힌 <span class='hl'>장부를 누가 관리하는가?</span></p>");
+
+pg("PART 3 · 돈","장부지기의 문제",
+"<p>현재의 답: 은행과 정부가 장부지기다. 대체로 훌륭하게 일해왔다. 인정할 건 인정하자.</p>\
+<p>하지만 비용도 있다. 송금 수수료와 환전 수수료, 은행 점검 시간, 국경을 넘을 때의 번거로움, 계좌 동결의 가능성. 그리고 아주 가끔, 2008년 같은 대형 사고.</p>\
+<p class='pull'>그래서 인류는 오래된 질문 하나를 품게 됐다. \u201C장부지기 없이도 돌아가는 장부는 불가능한가?\u201D — 2009년, 이 질문에 답이 나타난다.</p>");
+
+pg("PART 3 · 돈","인플레이션 맛보기",
+"<p>신용화폐 시대의 고질병 하나를 짚고 가자. 닻(금)이 없으니, 정부는 필요할 때 돈을 더 찍을 수 있다. 돈이 흔해지면 돈의 값이 떨어진다. <span class='hl'>인플레이션</span>이다.</p>\
+<p>짜장면 가격의 역사가 증인이다. 수십 년 전 몇백 원이던 짜장면이 지금은 칠팔천 원이다. 짜장면이 열 배 맛있어진 게 아니라, 돈의 힘이 그만큼 빠진 것이다.</p>\
+<p>천천히, 그러나 확실히. 가만히 있는 현금은 매년 조금씩 얇아진다. 이 이야기는 8부에서 부자의 시선으로 다시 만난다.</p>");
+
+pg("PART 3 · 돈","좋은 돈의 체크리스트",
+"<p>5천 년 역사를 채점표로 정리하면, 좋은 돈의 조건은 여섯 가지다.</p>\
+<p>① <span class='hl'>내구성</span> — 썩지 않는가 ② <span class='hl'>휴대성</span> — 들고 다닐 만한가 ③ <span class='hl'>분할성</span> — 잘게 나뉘는가 ④ <span class='hl'>균질성</span> — 어느 조각이든 같은가 ⑤ <span class='hl'>희소성</span> — 함부로 늘릴 수 없는가 ⑥ <span class='hl'>검증 가능성</span> — 진짜인지 쉽게 확인되는가.</p>\
+<p class='pull'>금은 휴대성에서, 지폐는 희소성에서 감점을 받는다. 이 채점표를 기억해두시라. 뒤에서 비트코인을 같은 표로 채점해볼 테니.</p>");
+
+pg("쉬어가기","돈이 된 이상한 것들",
+"<p>역사상 돈으로 쓰인 것들의 목록은 박물관급이다. 조개, 소금, 고래 이빨, 담배(전쟁 포로수용소의 기축통화였다), 앵무새 깃털, 그리고 감옥에서는 라면과 고등어 통조림까지.</p>\
+<p>공통점은 하나다. <span class='hl'>그 공동체 안에서 모두가 받아줬다는 것.</span> 돈의 자격은 재질이 아니라 합의가 준다.</p>\
+<p>그렇다면 인터넷이라는 공동체가 디지털 숫자를 돈으로 합의하는 것도, 역사의 눈으로 보면 그리 이상한 일은 아닐지 모른다.</p>");
+
+pg("PART 3 · 돈","3부 요약 한 페이지",
+"<p>3부를 한 페이지로 접는다.</p>\
+<p>① 돈은 물물교환의 지옥을 벗어나기 위한 발명품. ② 오디션의 챔피언은 금 — 하지만 무거웠다. ③ 그래서 보관증(지폐)이 탄생했고, 1971년 금과의 연결이 끊기며 돈은 '믿음'만으로 돌게 됐다. ④ 얍 섬의 돌이 알려주듯, 돈의 정체는 물건이 아니라 장부다. ⑤ 남은 질문: \u201C그 장부, 꼭 은행과 정부만 관리해야 하나?\u201D</p>\
+<p class='pull'>이 질문을 품고 다음 부로 넘어가자. 2008년, 누군가 대답을 준비하고 있었다.</p>");
+
+/* ============================================================
+   PART 4 — 비트코인 역사
+============================================================ */
+part("PART 4","⏳","비트코인 연대기","분노에서 태어나 무시당하고,\n버블과 겨울을 오가며 17년.");
+
+pg("PART 4 · 역사","시작은 분노였다: 2008",
+"<p>2008년, 세계 금융위기가 터졌다. 미국의 큰 은행들이 무리한 장사를 하다 무너졌고, 그 여파로 전 세계 평범한 사람들이 직장과 집을 잃었다.</p>\
+<p>그런데 정작 사고를 친 은행들은? 정부가 국민 세금으로 구제해줬다. 사고는 은행이 치고, 계산서는 시민이 받은 것이다.</p>\
+<p class='pull'>\u201C은행과 정부를 믿지 못하겠다면, 그들 없이 돌아가는 돈을 만들 수는 없을까?\u201D — 이 분노 섞인 질문에서 모든 게 시작됐다.</p>");
+
+pg("PART 4 · 역사","9쪽짜리 백서: 2008.10.31",
+"<p>금융위기가 한창이던 2008년 10월 31일, 어느 암호학 커뮤니티에 논문 한 편이 올라왔다. 제목은 <span class='hl'>\u201C비트코인: 개인 간 전자 화폐 시스템\u201D</span>. 겨우 9쪽이었다.</p>\
+<p>내용을 한 줄로 요약하면 이렇다. \u201C은행 없이, 서로 모르는 사람끼리도, 안전하게 돈을 주고받는 방법을 찾았다.\u201D</p>\
+<p>글쓴이의 이름은 <span class='hl'>사토시 나카모토</span>. 일본식 이름이지만, 실제로 누구인지는 아무도 몰랐다.</p>");
+
+pg("PART 4 · 역사","첫 블록의 숨은 메시지: 2009.1.3",
+"<p>2009년 1월 3일, 사토시는 비트코인의 첫 번째 블록(제네시스 블록)을 만들었다. 그리고 그 안에 그날 영국 신문의 헤드라인 한 줄을 새겨 넣었다.</p>\
+<p class='pull'>\u201C재무장관, 은행에 두 번째 구제금융 임박\u201D</p>\
+<p>단순한 날짜 증명이자, 동시에 선언이었다. \u201C이 돈은 은행을 구제해주는 그 시스템에 대한 대답이다.\u201D 비트코인의 출생신고서에는 이렇게 시대에 대한 야유가 적혀 있다.</p>");
+
+pg("PART 4 · 역사","아무도 안 쳐다보던 시절",
+"<p>태어난 직후의 비트코인은 철저히 무명이었다. 암호학 덕후 몇 명이 취미로 굴리는 실험품. 가격? 그런 건 없었다. 아무도 사고팔지 않았으니까.</p>\
+<p>초창기엔 가정용 컴퓨터로도 채굴이 됐다. 지금 기준으로 수백억 원어치를 노트북으로 캐던, 전설의 시대다. 물론 당시엔 그게 수백억이 될 줄 아무도 몰랐다.</p>\
+<p>모든 큰 이야기의 시작은 이렇게 조용하다.</p>");
+
+pg("PART 4 · 역사","피자 두 판의 전설: 2010.5.22",
+"<p>2010년 5월 22일, 역사적인 거래가 일어난다. 미국의 한 개발자가 게시판에 글을 올렸다. \u201C비트코인 <span class='hl'>1만 개</span> 줄 테니 피자 두 판만 시켜줄 사람?\u201D</p>\
+<p>누군가 응했고, 피자 두 판이 배달됐다. 비트코인으로 실물을 산 최초의 기록이다. 그래서 5월 22일은 지금도 <span class='hl'>'비트코인 피자 데이'</span>로 기념된다.</p>");
+
+pg("PART 4 · 역사","그 피자, 지금 얼마?",
+"<p>궁금하지 않은가. 그 피자값 1만 BTC, 지금 시세로 얼마일까?</p>\
+<p>1개에 9천만 원이라 치면… <span class='hl'>약 9,000억 원</span>. 피자 한 판에 4,500억 원꼴이다. 인류 역사상 가장 비싼 배달 음식이라 불러도 손색없다.</p>\
+<p class='pull'>하지만 이 거래는 웃음거리가 아니라 이정표다. \u201C이 이상한 디지털 숫자로도 실제 물건을 살 수 있다\u201D는 첫 증명이었으니까.</p>");
+
+pg("PART 4 · 역사","사토시의 실종: 2011",
+"<p>비트코인이 조금씩 알려지기 시작하자, 정작 창시자는 반대로 움직였다. 2010년 말부터 사토시의 글이 뜸해지더니, 2011년 무렵 완전히 사라졌다. 마지막 메시지 몇 통을 남기고, 두 번 다시 나타나지 않았다.</p>\
+<p>그가 초창기에 캔 것으로 추정되는 약 100만 개의 비트코인도 십수 년째 그대로 잠들어 있다. 지금 가치로 수십조 원. 단 한 개도 움직이지 않았다.</p>");
+
+pg("PART 4 · 역사","사토시는 누구인가",
+"<p>사토시의 정체를 두고 온갖 추측이 나왔다. 어느 암호학자다, 프로그래머 아무개다, 한 명이 아니라 팀이다, 심지어 정보기관이다…</p>\
+<p>유력 후보로 지목된 사람들은 하나같이 부인했고, \u201C내가 사토시\u201D라고 나선 사람들은 하나같이 증명에 실패했다. 17년이 지난 지금도 미스터리다.</p>\
+<p>수십조 원을 손도 안 대고 사라진 사람. 돈이 목적이 아니었던 것만은 분명해 보인다.</p>");
+
+pg("PART 4 · 역사","실종이 오히려 축복이었다",
+"<p>이상하게 들리겠지만, 사토시의 실종은 비트코인에게 최고의 선물이었을지 모른다.</p>\
+<p>창시자가 있으면 그 사람이 약점이 된다. 정부가 압박할 수도, 본인이 변심할 수도, 스캔들이 터질 수도 있다. 그런데 비트코인은 주인이 사라졌다. 협박할 대상도, 구속할 사람도 없다.</p>\
+<p class='pull'>주인 없는 돈. 그래서 누구의 것도 아니고, 그래서 모두의 것이 될 수 있었다.</p>");
+
+pg("PART 4 · 역사","첫 광풍과 1,000달러: 2013",
+"<p>2013년, 비트코인이 처음으로 대중 뉴스에 등장한다. 연초 13달러였던 가격이 그해 말 <span class='hl'>1,000달러</span>를 돌파한 것이다. 1년에 약 80배.</p>\
+<p>키프로스라는 나라의 금융위기로 \u201C은행도 내 돈을 뺏을 수 있구나\u201D를 목격한 사람들, 그리고 중국의 투자 열풍이 불을 붙였다. 물론 이후 중국 정부가 규제에 나서며 가격은 크게 꺾였다.</p>\
+<p>오르고, 꺾이고. 이 패턴은 앞으로 지겹도록 반복된다.</p>");
+
+pg("PART 4 · 역사","어두운 사용처: 실크로드",
+"<p>솔직한 역사를 위해 어두운 페이지도 넘기자. 초창기 비트코인의 주요 사용처 중 하나는 <span class='hl'>실크로드</span>라는 온라인 암시장이었다. 마약 등 불법 거래에 추적이 어려운 비트코인이 쓰인 것이다.</p>\
+<p>2013년 미국 FBI가 실크로드를 폐쇄하고 운영자를 체포했다. \u201C비트코인 = 범죄자의 돈\u201D이라는 이미지가 이때 굳어졌다.</p>\
+<p>다만 짚어둘 것. 현금도 범죄에 쓰인다. 도구의 어두운 사용처가 도구 자체의 전부는 아니다. 판단은 각자의 몫이다.</p>");
+
+pg("PART 4 · 역사","Mt.Gox 파산: 2014",
+"<p>2014년, 당시 세계 최대 비트코인 거래소였던 일본의 <span class='hl'>Mt.Gox(마운트곡스)</span>가 파산했다. 해킹 등으로 고객의 비트코인 약 85만 개가 사라진 것이다. 당시 시세로도 어마어마했고, 지금 시세로는 상상을 초월한다.</p>\
+<p>수많은 사람이 돈을 잃었고, \u201C역시 비트코인은 위험해\u201D라는 인식이 퍼졌다. 가격도 길고 긴 침체에 들어갔다.</p>");
+
+pg("PART 4 · 역사","은행이 털린 것 vs 금고가 털린 것",
+"<p>여기서 아주 중요한 구분 하나. Mt.Gox에서 털린 것은 <span class='hl'>거래소</span>지, 비트코인 자체가 아니다.</p>\
+<p>비유하면 이렇다. 금은방이 도둑맞았다고 해서 '금'이라는 물질이 고장 난 게 아니다. 비트코인의 장부(블록체인) 자체는 그때도, 지금도 해킹당한 적이 없다.</p>\
+<p class='pull'>앞으로 \u201C비트코인 해킹\u201D 뉴스를 보면 꼭 물어보자. \u201C털린 게 금고야, 금이야?\u201D 십중팔구 금고(거래소) 이야기다.</p>");
+
+pg("PART 4 · 역사","조용한 성장기: 2015-2016",
+"<p>Mt.Gox의 상처로 가격은 몇 년간 바닥을 겼다. 뉴스도 시들해졌다. 하지만 물밑에서는 다른 일이 벌어지고 있었다.</p>\
+<p>개발자들은 꾸준히 시스템을 다듬었고, 2016년에는 두 번째 <span class='hl'>반감기</span>(새 코인 발행량이 절반으로 주는 이벤트)가 조용히 지나갔다. 그리고 2015년, <span class='ehl'>이더리움</span>이라는 걸출한 동생이 태어난다. (이 이야기는 6부에서.)</p>\
+<p>겨울에도 뿌리는 자란다. 이 시장의 반복되는 진리다.</p>");
+
+pg("PART 4 · 역사","대광풍: 2017",
+"<p>2017년, 비트코인 역사상 가장 뜨거운 해가 온다. 연초 1,000달러 수준이던 가격이 12월에 <span class='hl'>약 2만 달러</span>까지 폭등했다.</p>\
+<p>한국은 특히 뜨거웠다. 전 국민이 코인을 이야기했고, 한국 거래소 가격이 해외보다 훨씬 비싼 <span class='hl'>'김치 프리미엄'</span>이라는 신조어까지 생겼다. \u201C가즈아!\u201D가 울려 퍼지던 그 시절이다.</p>\
+<p>그리고 광풍의 끝은, 늘 그렇듯.</p>");
+
+pg("PART 4 · 역사","긴 겨울: 2018",
+"<p>2018년, 파티가 끝났다. 2만 달러였던 비트코인은 그해 말 3천 달러대까지 떨어졌다. 80% 이상의 폭락. 언론은 \u201C버블 붕괴\u201D, \u201C튤립의 재현\u201D이라며 부고 기사를 쏟아냈다.</p>\
+<p>그리고 바로 이 해가, 내가 <span class='hl'>비트코인이라는 단어를 처음 들은 해</span>다. 2천만 원이라는 숫자에 놀라며. 알고 보니 나는 잔치의 끝물에 도착해 설거지 광경부터 본 셈이었다.</p>\
+<p class='pull'>많은 사람이 이때 \u201C비트코인은 끝났다\u201D고 확신했다. 그 확신은 틀렸다.</p>");
+
+pg("PART 4 · 역사","코로나와 돈 풀기: 2020",
+"<p>2020년 3월, 코로나 팬데믹으로 전 세계 자산이 대폭락했다. 비트코인도 반토막이 났다. \u201C거봐, 위기엔 역시 못 버티네.\u201D</p>\
+<p>그런데 반전이 온다. 각국 정부가 경기를 살리려 역사상 유례없는 규모로 <span class='hl'>돈을 풀기 시작</span>한 것이다. 돈이 흔해지면 돈의 가치는 떨어진다. 사람들은 '찍어낼 수 없는 자산'을 찾기 시작했다.</p>\
+<p>개수가 2,100만 개로 고정된 비트코인이, 갑자기 다르게 보이기 시작했다.</p>");
+
+pg("PART 4 · 역사","기관의 입장: 2021",
+"<p>2021년, 분위기가 완전히 달라진다. 개미들의 놀이터였던 이 시장에 <span class='hl'>기관과 기업</span>이 들어오기 시작한 것이다.</p>\
+<p>테슬라가 회사 자금으로 비트코인을 대량 매입했다고 발표했고, 미국의 상장 기업들과 큰손들이 뒤를 이었다. \u201C사기\u201D라던 월가의 태도도 미묘하게 바뀌었다.</p>\
+<p>비웃던 어른들이 하나둘 줄을 서기 시작한 것. 이것이 2021년의 풍경이다.</p>");
+
+pg("PART 4 · 역사","채굴 대이동: 2021",
+"<p>2021년에는 뒤에서 큰 지각변동도 있었다. 당시 세계 채굴의 최대 거점이던 <span class='hl'>중국이 채굴을 전면 금지</span>한 것이다. 전 세계 채굴 파워의 큰 몫이 하루아침에 꺼졌다.</p>\
+<p>비트코인은 죽었을까? 원리 편에서 배울 '난이도 자동 조절'이 작동하며 네트워크는 몇 달 만에 정상을 되찾았고, 채굴자들은 장비를 싣고 미국 등지로 대이동했다.</p>\
+<p class='pull'>\u201C한 나라가 꺼도 안 죽는다\u201D — 이론으로만 하던 말이 실전에서 증명된 사건이었다.</p>");
+
+pg("PART 4 · 역사","한 나라의 법정화폐: 2021.9",
+"<p>2021년 9월, 역사적 사건이 벌어진다. 중미의 <span class='hl'>엘살바도르</span>가 세계 최초로 비트코인을 <span class='hl'>법정화폐</span>로 채택한 것이다. 달러와 나란히, 국가가 공인한 돈이 됐다.</p>\
+<p>자국 화폐가 없어 달러에 의존하던 나라, 해외 노동자의 송금 수수료가 뼈아팠던 나라의 선택이었다. 무모하다는 비판과 혁신이라는 찬사가 동시에 쏟아졌다.</p>\
+<p class='pull'>평가는 엇갈려도 사실은 남는다. '장난감 돈'이 국가의 돈이 된 최초의 순간.</p>");
+
+pg("PART 4 · 역사","69,000달러: 2021.11",
+"<p>2021년 11월, 비트코인은 약 <span class='hl'>69,000달러</span>라는 사상 최고가를 찍었다. 2018년 겨울 \u201C끝났다\u201D던 그 자산이, 3년 만에 20배 넘게 오른 것이다.</p>\
+<p>이때쯤 재미있는 별명이 완전히 자리 잡았다. <span class='hl'>'디지털 금'</span>. 금처럼 개수가 한정돼 있고, 금처럼 가치 저장 수단으로 쓰인다는 뜻이다.</p>\
+<p>물론, 산이 높으면 골도 깊은 법. 다음 페이지부터는 다시 추락의 시간이다.</p>");
+
+pg("PART 4 · 역사","루나 사태: 2022.5",
+"<p>2022년 5월, 한국인 개발자가 만든 <span class='hl'>루나/테라</span>라는 대형 코인 프로젝트가 단 며칠 만에 붕괴했다. 시가총액 수십조 원이 사실상 증발했고, 전 세계 수많은 투자자가 피해를 봤다.</p>\
+<p>루나는 비트코인과는 전혀 다른 구조의 코인이었지만, 시장의 공포는 코인 전체로 번졌다. 비트코인도 함께 곤두박질쳤다.</p>\
+<p>이 사건의 교훈: 코인이라고 다 같은 코인이 아니다. 구조를 모르는 것에 돈을 넣으면 안 된다.</p>");
+
+pg("PART 4 · 역사","FTX 파산: 2022.11",
+"<p>같은 해 11월, 이번엔 세계 2위권 거래소 <span class='hl'>FTX</span>가 파산했다. 고객 돈을 몰래 유용한, 그야말로 전통적인 의미의 사기·횡령이었다. 창업자는 감옥에 갔다.</p>\
+<p>비트코인 가격은 16,000달러대까지 밀렸다. 부고 기사가 다시 쏟아졌다. \u201C이번엔 진짜 끝\u201D이라고.</p>\
+<p class='pull'>그런데 다시 보자. 이번에도 무너진 건 '거래소(금고)'였지 '비트코인(금)'이 아니었다. 금고가 털린 것과 금이 가짜인 것은 다른 문제다.</p>");
+
+pg("PART 4 · 역사","조용한 회복: 2023",
+"<p>2023년, 폐허 위에서 시장은 또 조용히 회복했다. 특별한 축포 없이, 16,000달러대였던 가격이 연말엔 40,000달러를 넘었다.</p>\
+<p>왜 올랐을까? 여러 이유가 있지만, 가장 큰 기대는 하나였다. \u201C곧 미국에서 <span class='hl'>비트코인 현물 ETF</span>가 승인될지도 모른다.\u201D</p>\
+<p>ETF가 뭐길래? 다음 장에서 아주 쉽게 설명한다. 이게 꽤 중요한 사건이라서.</p>");
+
+pg("PART 4 · 역사","ETF 승인: 2024.1",
+"<p>2024년 1월, 미국 금융당국이 <span class='hl'>비트코인 현물 ETF</span>를 승인했다. ETF란 쉽게 말해 '주식 계좌에서 사고팔 수 있게 포장한 상품'이다.</p>\
+<p>이게 왜 큰일이냐. 그동안 \u201C코인 거래소는 못 믿겠어\u201D 하던 사람들, 그리고 규정상 코인을 직접 못 사던 연기금·기관들도, 이제 익숙한 주식 계좌로 비트코인에 투자할 수 있게 된 것이다.</p>\
+<p class='pull'>비유하면: 시장 골목에서만 팔던 물건이 대형마트 진열대에 오른 것. 이걸 '제도권 입성'이라 부른다.</p>");
+
+pg("PART 4 · 역사","네 번째 반감기: 2024.4",
+"<p>2024년 4월, 네 번째 <span class='hl'>반감기</span>가 왔다. 채굴 보상이 블록당 6.25개에서 <span class='mono'>3.125개</span>로 줄었다.</p>\
+<p>반감기의 역사를 보면: 2012년(50→25), 2016년(25→12.5), 2020년(12.5→6.25), 2024년(6.25→3.125). 그리고 다음은 <span class='hl'>2028년</span>, 다섯 번째다.</p>\
+<p>4년마다 신규 공급이 반으로 주는 자산. 이 설계의 의미는 원리 편에서 제대로 뜯어본다.</p>");
+
+pg("PART 4 · 역사","정치가 움직이다: 트럼프 2기",
+"<p>그리고 정치의 바람이 분다. 트럼프 1기와 바이든 정부 시절, 미국은 비트코인에 시큰둥하거나 반대에 가까웠다. 그런데 <span class='hl'>트럼프 2기</span> 들어 미국이 친(親) 비트코인 정책으로 방향을 틀었다.</p>\
+<p>여기서 생각해볼 점. 트럼프는 <span class='hl'>America First</span>, MAGA를 외치며 미국의 이익을 위해서라면 뭐든 할 것 같은 사람이다. 그런 사람이 비트코인을 품었다.</p>\
+<p class='pull'>좋아서가 아니라 계산했기 때문 아닐까. \u201C이건 미국 국익에 남는 장사\u201D라는 계산.</p>");
+
+pg("PART 4 · 역사","1억 7천만 원: 2025.10",
+"<p>제도권 자금과 정책의 순풍을 타고, 비트코인은 2025년 10월 원화 기준 <span class='hl'>약 1억 7천만 원</span>이라는 고점을 찍었다.</p>\
+<p>2018년에 \u201C2천만 원? 미쳤네\u201D 하던 그 자산이다. 7년 사이 8배 이상. 물론 그 사이에 반토막을 몇 번이나 겪으면서.</p>\
+<p>이 시장의 특징은 늘 이렇다. 오를 때도 무섭게, 떨어질 때도 무섭게.</p>");
+
+pg("PART 4 · 역사","그리고 지금: 2026 여름",
+"<p>2026년 여름 현재, 비트코인은 <span class='hl'>9천만 원 수준</span>에서 오르락내리락하고 있다. 고점 대비로는 한참 내려온 가격이고, 2018년의 나에게 말해주면 기절할 가격이다.</p>\
+<p>내일은? 모른다. 다만 17년의 연대기를 쭉 훑고 나면 한 가지 패턴은 보인다. 다음 페이지에서 정리하자.</p>");
+
+pg("PART 4 · 역사","4년 주기설이라는 소문",
+"<p>연대기를 훑다 보면 눈에 밟히는 게 있다. 큰 상승장들이 묘하게 <span class='hl'>반감기(4년마다) 부근</span>에 몰려 있다는 것. 그래서 \u201C반감기 → 공급 감소 → 1~2년 뒤 상승\u201D이라는 '4년 주기설'이 이 동네의 인기 이론이 됐다.</p>\
+<p>솔직한 평가: 표본이 겨우 몇 번뿐이라 과학이라 부르기엔 부족하다. 모두가 믿어서 스스로 실현되는 예언일 수도, 우연일 수도 있다.</p>\
+<p class='pull'>주기설은 나침반이 아니라 참고용 민간 설화 정도로. 달력에 맞춰 부자가 되는 법이 있다면, 이미 모두 부자가 됐을 것이다.</p>");
+
+pg("PART 4 · 역사","역사가 보여주는 패턴",
+"<p>17년을 요약하면 이 문장이 된다. <span class='hl'>\u201C폭등 → 폭락 → 부고 기사 → 조용한 회복 → 더 높은 폭등.\u201D</span></p>\
+<p>실제로 해외에는 언론에 실린 '비트코인 사망 선고' 기사를 수집하는 사이트까지 있다. 지금까지 수백 번 죽었다고 보도됐다. 수백 번 죽었는데 아직 살아 있으면, 그건 좀비거나… 애초에 죽은 적이 없는 것이다.</p>\
+<p class='pull'>과거의 생존이 미래의 생존을 보장하진 않는다. 하지만 \u201C왜 이렇게 안 죽는가\u201D는 물어볼 가치가 충분하다. 그 답은 '원리'에 있다.</p>");
+
+pg("쉬어가기","연표 한 장 요약",
+"<p><span class='mono'>2008</span> 금융위기, 사토시의 백서<br><span class='mono'>2009</span> 첫 블록 탄생<br><span class='mono'>2010</span> 피자 두 판 = 1만 BTC<br><span class='mono'>2011</span> 사토시 실종<br><span class='mono'>2013</span> 첫 1,000달러<br><span class='mono'>2014</span> Mt.Gox 파산<br><span class='mono'>2017</span> 2만 달러, 김치 프리미엄<br><span class='mono'>2018</span> 긴 겨울 (내가 처음 들은 해)<br><span class='mono'>2020</span> 코로나, 돈 풀기<br><span class='mono'>2021</span> 기관 입장, 엘살바도르, 69K<br><span class='mono'>2022</span> 루나·FTX 붕괴<br><span class='mono'>2024</span> ETF 승인, 4차 반감기<br><span class='mono'>2025</span> 1.7억 원 고점<br><span class='mono'>2026</span> 지금, 9천만 원 부근</p>");
+
+/* ============================================================
+   PART 5 — 비트코인 원리
+============================================================ */
+part("PART 5","⚙","비트코인의 원리","계모임 장부만 이해하면\n블록체인의 절반은 이해한 것입니다.");
+
+pg("PART 5 · 원리","원리, 무섭지 않다",
+"<p>\u201C블록체인\u201D이라는 말만 들어도 머리가 아픈가? 정상이다. 하지만 약속하겠다. 이 파트가 끝나면, 당신은 술자리에서 블록체인을 설명하는 사람이 되어 있을 것이다.</p>\
+<p>준비물은 단 하나. <span class='hl'>계모임 장부</span>를 상상하는 능력. 그거면 충분하다.</p>");
+
+pg("PART 5 · 원리","어느 마을의 계모임",
+"<p>100명이 사는 마을에 계모임이 있다. 누가 얼마를 냈고, 누가 누구에게 얼마를 보냈는지, 전부 <span class='hl'>장부</span>에 적힌다.</p>\
+<p>돈의 본질은 사실 이 장부다. 은행 잔고라는 것도 결국 은행 컴퓨터 장부에 적힌 숫자일 뿐이니까. \u201C내 통장에 100만 원 있다\u201D = \u201C은행 장부에 그렇게 적혀 있다\u201D.</p>\
+<p class='pull'>돈 문제는 곧 장부 문제다. 이 관점 전환이 오늘의 첫 열쇠다.</p>");
+
+pg("PART 5 · 원리","총무를 믿을 수 있나요",
+"<p>그런데 문제가 생긴다. 장부는 총무 한 명이 관리한다. 만약 총무가 몰래 자기 이름 옆에 0을 하나 붙이면? 장부를 잃어버리면? 총무네 집에 불이 나면?</p>\
+<p>우리는 늘 이 문제를 '더 믿을 만한 총무'로 해결해왔다. 그게 은행이고 정부다. 하지만 2008년, 그 총무들이 사고 치는 걸 전 세계가 목격했다.</p>\
+<p>사토시의 질문은 달랐다. \u201C총무를 잘 뽑을 게 아니라, <span class='hl'>총무 없이</span> 장부를 관리할 순 없을까?\u201D</p>");
+
+pg("PART 5 · 원리","해법: 전원이 장부를 갖는다",
+"<p>사토시의 해법은 황당할 만큼 단순하다. <span class='hl'>\u201C마을 사람 100명 전원이 장부 복사본을 갖게 하자.\u201D</span></p>\
+<p>누가 돈을 보내면 마을 전체에 외친다. \u201C철수가 영희에게 만 원 보냈습니다!\u201D 100명이 각자 자기 장부에 그걸 적는다.</p>\
+<p>이제 한 명이 장부를 조작해도 소용없다. 나머지 99권과 다르니 바로 들통난다. 장부 한 권이 불타도 99권이 남아 있다. 총무가 없으니 총무 비리도 없다.</p>");
+
+pg("PART 5 · 원리","그게 블록체인입니다",
+"<p>방금 그 아이디어에 이름을 붙이면 이렇게 된다.</p>\
+<p>모두가 나눠 갖는 장부 = <span class='hl'>분산 원장</span>. 그 장부를 특별한 방식으로 묶은 기술 = <span class='hl'>블록체인</span>. 특정 관리자(총무) 없이 돌아가는 것 = <span class='hl'>탈중앙화</span>.</p>\
+<p class='pull'>축하한다. 방금 당신은 블록체인의 핵심을 이해했다. 이제부터는 디테일이다.</p>");
+
+pg("PART 5 · 원리","블록 = 장부 한 페이지",
+"<p>거래 기록을 실시간으로 낱장으로 흩어두면 관리가 어렵다. 그래서 일정 시간 동안의 거래를 모아 <span class='hl'>한 페이지</span>로 묶는다. 이 페이지가 바로 <span class='hl'>블록</span>이다.</p>\
+<p>비트코인은 약 <span class='mono'>10분</span>에 한 페이지(블록)씩 장부가 늘어난다. \u201C지금까지 몇 번째 블록\u201D 하는 식으로 페이지 번호도 붙는다.</p>\
+<p>블록 = 페이지. 이게 두 번째 열쇠다.</p>");
+
+pg("PART 5 · 원리","체인 = 페이지를 풀로 붙이기",
+"<p>그런데 페이지를 그냥 쌓아두면, 누가 몰래 과거 페이지를 찢고 바꿔치기할 수 있다. 그래서 비트코인은 각 페이지에 <span class='hl'>'이전 페이지의 요약(지문)'</span>을 함께 적는다.</p>\
+<p>101번째 페이지에는 100번째 페이지의 지문이, 102번째에는 101번째의 지문이… 이렇게 모든 페이지가 앞 페이지와 사슬(체인)처럼 엮인다.</p>\
+<p class='pull'>블록(페이지) + 체인(사슬) = 블록체인. 이름 그대로다.</p>");
+
+pg("PART 5 · 원리","해시: 디지털 지문",
+"<p>방금 말한 '요약(지문)'의 정체가 <span class='hl'>해시</span>다. 어떤 데이터든 넣으면 고정 길이의 암호 같은 문자열이 튀어나오는 수학 기계라고 보면 된다.</p>\
+<p>예를 들어 \u201C철수가 영희에게 만 원\u201D이라는 문장을 해시 기계에 넣으면 <span class='mono'>a3f8c2...</span> 같은 값이 나온다. 같은 입력은 언제나 같은 지문. 사람 지문처럼, 데이터의 지문이다.</p>");
+
+pg("PART 5 · 원리","해시의 무서운 성질",
+"<p>해시의 진짜 무서운 점은 이거다. <span class='hl'>입력을 아주 조금만 바꿔도, 지문이 완전히 달라진다.</span></p>\
+<p>\u201C만 원\u201D을 \u201C만 1원\u201D으로 바꾸면, 지문은 비슷해지는 게 아니라 아예 딴판이 된다. 그리고 지문만 보고 원본을 역추적하는 것은 사실상 불가능하다.</p>\
+<p>즉, 장부 내용을 몰래 1원이라도 고치면 지문이 확 바뀌어 즉시 들통난다. 완벽한 감시 도장인 셈이다.</p>");
+
+pg("PART 5 · 원리","과거를 조작하려면",
+"<p>이제 조합해보자. 누가 100번째 페이지의 기록을 조작하려 한다.</p>\
+<p>① 100페이지를 고치면 → 100페이지의 지문이 바뀐다. ② 그런데 101페이지에 '옛 지문'이 적혀 있다 → 101페이지도 고쳐야 한다. ③ 그러면 101의 지문이 바뀌어서 → 102도, 103도… <span class='hl'>끝까지 전부</span> 다시 써야 한다.</p>\
+<p class='pull'>게다가 그 짓을 마을 사람 과반의 장부에서 동시에 해내야 한다. 과거를 고치는 비용이 천문학적으로 설계된 것. 이게 \u201C블록체인은 위조가 어렵다\u201D의 실체다.</p>");
+
+pg("PART 5 · 원리","남은 문제: 누가 페이지를 쓰나",
+"<p>총무가 없다고 했다. 그럼 10분마다 새 페이지(블록)는 <span class='hl'>누가</span> 쓰는가? 아무나 쓰게 하면 거짓말쟁이가 가짜 페이지를 마구 뿌릴 텐데.</p>\
+<p>사토시의 답이 기가 막히다. \u201C페이지를 쓰고 싶은 사람은, 먼저 <span class='hl'>어려운 숙제</span>를 풀어라. 가장 먼저 푼 사람에게 이번 페이지를 쓸 자격을 주겠다.\u201D</p>\
+<p>이 숙제 풀기가 바로 그 유명한 <span class='hl'>채굴</span>이다.</p>");
+
+pg("PART 5 · 원리","채굴 = 로또 긁기",
+"<p>숙제의 내용은 사실 단순무식하다. \u201C이번 페이지 내용에 아무 숫자나 하나 붙여서 지문(해시)을 냈을 때, 그 지문이 <span class='hl'>특정 조건(예: 0이 잔뜩 앞에 붙은 값)</span>보다 작게 나오는 숫자를 찾아라.\u201D</p>\
+<p>요령이 없다. 그냥 1, 2, 3… 수조, 수백조 번 넣어보며 되는 값을 찾는 수밖에. 사실상 <span class='hl'>로또 긁기</span>다. 컴퓨터가 빠를수록 초당 더 많은 로또를 긁는 것뿐이다.</p>\
+<p>이렇게 '일(계산)을 했음을 증명'하는 방식이라서, 이 규칙의 이름이 <span class='hl'>작업증명(PoW)</span>이다.</p>");
+
+pg("PART 5 · 원리","왜 이런 뻘짓을 시키나",
+"<p>일부러 전기를 태우며 로또를 긁게 하다니, 낭비 아닌가? 그런데 여기에 깊은 뜻이 있다.</p>\
+<p>페이지 쓸 자격에 <span class='hl'>실제 비용(전기+장비)</span>이 들게 만들면, 가짜 페이지를 뿌리는 것도 비싸진다. 거짓말 한 번에 수억 원이 들면, 거짓말쟁이는 파산한다.</p>\
+<p class='pull'>말은 공짜지만 증명은 비싸다. 비트코인은 '비싼 증명'으로 신뢰를 만든다. 도장 대신 땀으로 찍는 결재랄까.</p>");
+
+pg("PART 5 · 원리","10분의 마법: 난이도 조절",
+"<p>재미있는 장치가 하나 더 있다. 채굴 참여자가 늘어 문제가 너무 빨리 풀리면, 시스템이 <span class='hl'>자동으로 문제를 어렵게</span> 만든다. 반대로 참여자가 줄면 쉽게 만든다.</p>\
+<p>목표는 하나. <span class='hl'>\u201C어떤 상황에서도 약 10분에 한 페이지.\u201D</span> 전 세계 컴퓨터가 몇 배로 늘든 줄든, 장부는 꾸준히 10분에 한 장씩 넘어간다.</p>\
+<p>관리자도 없는데 스스로 속도를 지키는 시계. 사토시 설계의 백미로 꼽힌다.</p>");
+
+pg("PART 5 · 원리","채굴 보상: 왜 다들 로또를 긁나",
+"<p>전기세를 써가며 로또를 긁는 이유는 물론 <span class='hl'>보상</span>이 있어서다. 페이지를 쓴 승자는 두 가지를 받는다.</p>\
+<p>① <span class='hl'>새로 발행되는 비트코인</span> (2024년 반감기 이후 블록당 3.125개) ② 그 페이지에 담긴 거래들의 <span class='hl'>수수료</span>.</p>\
+<p>즉 채굴자는 봉사자가 아니라 사업자다. 자기 이익을 좇는 사업자들이 결과적으로 장부를 지킨다. 이기심으로 굴러가는 공익. 설계의 묘미다.</p>");
+
+pg("PART 5 · 원리","반감기: 4년마다 반으로",
+"<p>새 코인 보상은 영원하지 않다. 약 4년마다 <span class='hl'>절반으로</span> 줄어든다. 50개 → 25 → 12.5 → 6.25 → 3.125(현재)… 이것이 <span class='hl'>반감기</span>다.</p>\
+<p>2024년이 네 번째였고, <span class='hl'>2028년이 다섯 번째</span>다. 4년마다 돌아오는 올림픽처럼, 조용히 그러나 확실하게 공급을 조여간다.</p>\
+<p class='pull'>절반, 또 절반, 또 절반… 이 수열의 끝에 '2,100만 개'라는 숫자가 있다.</p>");
+
+pg("PART 5 · 원리","2140년, 채굴의 끝",
+"<p>반씩 줄어드는 보상을 다 더하면 총합이 <span class='hl'>2,100만 개</span>로 수렴한다. 계산상 서기 <span class='mono'>2140년</span>경, 마지막 비트코인 부스러기가 채굴되고 신규 발행은 영원히 끝난다.</p>\
+<p>\u201C그럼 그 후엔 채굴자들이 다 떠나서 장부가 멈추지 않나?\u201D 좋은 질문. 답은 앞에서 본 두 번째 보상, <span class='hl'>거래 수수료</span>다. 새 코인이 없어도, 수수료 수입을 위해 채굴(페이지 쓰기)은 계속된다는 설계다.</p>\
+<p>물론 2140년 걱정은 좀 이르다. 우리 모두 그때는… 음, 넘어가자.</p>");
+
+pg("PART 5 · 원리","2,100만이라는 헌법",
+"<p>여기서 곱씹을 것. 2,100만 개라는 상한은 누가 지키나? 사토시? 없다. 회사? 없다. 이 규칙은 <span class='hl'>전 세계 참여자 모두가 돌리는 코드</span>에 새겨져 있다.</p>\
+<p>누가 \u201C2,200만 개로 늘리자\u201D고 하면? 전 세계 참여자 대다수가 동의해서 각자의 프로그램을 바꿔야 한다. 그런데 보유자 입장에서 자기 자산의 희소성을 스스로 훼손할 이유가 없다.</p>\
+<p class='pull'>바꿀 수는 있지만 아무도 바꾸고 싶지 않은 규칙. 그래서 사실상 헌법이다.</p>");
+
+pg("PART 5 · 원리","지갑 이야기: 반전 하나",
+"<p>이제 '내 비트코인'을 보관하는 이야기. 시작부터 반전이 있다. <span class='hl'>지갑 안에는 코인이 없다.</span></p>\
+<p>비트코인은 어디까지나 장부(블록체인) 위의 기록이다. \u201C이 주소에 0.5 BTC 있음\u201D이라고 장부에 적혀 있을 뿐. 지갑이 보관하는 것은 코인이 아니라, 그 주소의 돈을 움직일 수 있는 <span class='hl'>열쇠</span>다.</p>\
+<p>코인은 장부에, 열쇠는 내 손에. 이 구도만 잡히면 다음 페이지들이 술술 풀린다.</p>");
+
+pg("PART 5 · 원리","공개키와 개인키",
+"<p>열쇠는 한 쌍이다.</p>\
+<p><span class='hl'>공개키(주소)</span> — 계좌번호 같은 것. 남에게 알려줘도 된다. \u201C여기로 보내주세요\u201D 할 때 쓴다.</p>\
+<p><span class='hl'>개인키</span> — 도장+비밀번호+통장을 합친 것. 이걸 아는 사람이 그 주소의 돈을 움직일 수 있다. <span class='hl'>절대로, 그 누구에게도</span> 알려주면 안 된다.</p>\
+<p>수학적으로 개인키에서 공개키는 만들 수 있지만, 공개키에서 개인키를 역산하는 건 사실상 불가능하다. 그래서 계좌번호를 공개해도 안전한 것이다.</p>");
+
+pg("PART 5 · 원리","열쇠가 없으면 내 돈이 아니다",
+"<p>이 동네의 유명한 격언이 있다. <span class='hl'>\u201CNot your keys, not your coins.\u201D</span> 네 열쇠가 아니면 네 코인이 아니다.</p>\
+<p>거래소에 코인을 두면, 개인키는 거래소가 갖고 있다. 편리하지만 본질적으로는 '거래소에 맡긴 것'이다. Mt.Gox와 FTX 사태에서 사람들이 잃은 게 바로 이 맡긴 돈이었다.</p>\
+<p class='pull'>편리함(거래소 보관)과 주권(직접 보관) 사이의 선택. 이 시장의 영원한 숙제다.</p>");
+
+pg("PART 5 · 원리","12개의 단어: 시드 문구",
+"<p>개인키는 사람이 외우기 힘든 긴 값이라, 지갑 앱들은 이를 <span class='hl'>12~24개의 평범한 단어</span>로 변환해준다. 이게 시드 문구(복구 문구)다.</p>\
+<p>예를 들면 \u201Capple river tiger …\u201D 같은 식. 이 단어들만 있으면 전 재산을 어디서든 복구할 수 있다. 뒤집으면, 이 단어들을 남이 알면 전 재산을 잃는다.</p>\
+<p>그래서 고수들은 이 단어를 컴퓨터가 아니라 <span class='hl'>종이나 금속판</span>에 적어 금고에 넣는다. 최첨단 디지털 자산의 최종 보안이 아날로그라니, 귀엽지 않은가.</p>");
+
+pg("PART 5 · 원리","하드디스크에 잠든 억만금",
+"<p>열쇠를 잃으면 어떻게 되나. 그냥 끝이다. 고객센터도, 비밀번호 찾기도 없다.</p>\
+<p>유명한 실화가 있다. 영국의 한 남성이 초창기에 채굴한 비트코인 수천 개가 담긴 하드디스크를 실수로 버렸다. 현재 가치 수천억 원. 그는 수년째 쓰레기 매립지 발굴을 시도 중이다.</p>\
+<p class='pull'>이렇게 열쇠와 함께 영영 잠든 비트코인이 전체의 상당수로 추정된다. 2,100만 개보다 실제 유통량은 더 적다는 뜻. 잃어버린 코인은 남은 코인의 희소성을 높여주는, 씁쓸한 기부가 된다.</p>");
+
+pg("PART 5 · 원리","송금 따라가기 ①",
+"<p>이제 배운 걸 총동원해서, 철수가 영희에게 0.1 BTC를 보내는 과정을 따라가 보자.</p>\
+<p>① 철수가 지갑 앱에 \u201C영희 주소로 0.1 보냄\u201D을 입력한다. ② 지갑이 철수의 <span class='hl'>개인키로 서명</span>한다. \u201C이 송금은 진짜 철수가 지시한 것\u201D이라는 위조 불가능한 도장이다. ③ 이 거래가 전 세계 네트워크에 방송된다. \u201C새 거래요! 장부에 적어주세요!\u201D</p>");
+
+pg("PART 5 · 원리","송금 따라가기 ②",
+"<p>④ 채굴자들이 이 거래를 주워서, 자기가 쓰는 새 페이지(블록)에 담는다. ⑤ 어느 채굴자가 로또(작업증명)에 당첨돼 페이지를 완성하고 전 세계에 뿌린다. ⑥ 마을 사람들(노드)이 검증 후 각자의 장부에 그 페이지를 추가한다.</p>\
+<p>끝. 이제 전 세계 수만 권의 장부에 \u201C철수→영희 0.1 BTC\u201D가 적혔다. 은행 없이, 국경 없이, 일요일 새벽에도.</p>\
+<p class='pull'>은행 점검 시간 안내문 없는 세계 최초의 24시간 장부. 이게 사토시가 만든 것이다.</p>");
+
+pg("PART 5 · 원리","컨펌: 여섯 번의 도장",
+"<p>거래가 페이지에 적힌 직후엔 아주 희박하게나마 뒤집힐 가능성이 있다. 그래서 그 위에 새 페이지가 쌓일 때마다 \u201C<span class='hl'>확정(컨펌) 1회</span>\u201D로 센다.</p>\
+<p>페이지가 위에 쌓일수록 그 거래를 조작하려면 다시 써야 할 페이지가 늘어나니, 갈수록 되돌리기 어려워진다. 관례적으로 <span class='hl'>6컨펌(약 1시간)</span>이면 사실상 돌이킬 수 없다고 본다.</p>\
+<p>도장 여섯 개가 찍히면 확정. 등기소보다 확실한 등기다.</p>");
+
+pg("PART 5 · 원리","노드: 마을 주민 되기",
+"<p>참고로 이 마을의 주민이 채굴자만 있는 건 아니다. 채굴(페이지 쓰기)은 안 하고, 그냥 <span class='hl'>장부 사본을 통째로 받아 검증만 하는 참여자</span>도 있다. 이들을 <span class='hl'>노드</span>라 부른다.</p>\
+<p>노드는 일반 PC로도 돌릴 수 있다. 전 세계 수만 명이 각자 자기 장부로 모든 거래를 검증한다. 채굴자가 규칙 위반 페이지를 만들어도, 노드들이 \u201C이건 무효\u201D라며 거부해버린다.</p>\
+<p class='pull'>이 동네의 구호가 여기서 나온다. \u201C믿지 말고, 검증하라(Don't trust, verify).\u201D 누구의 말도 믿을 필요 없이 직접 확인할 수 있는 시스템이라는 뜻이다.</p>");
+
+pg("PART 5 · 원리","51% 공격이란",
+"<p>이론상의 약점도 알아두자. 만약 누군가 전 세계 채굴 파워(로또 긁는 속도)의 <span class='hl'>과반(51%)</span>을 확보하면, 최근 장부를 자기 입맛대로 다시 쓸 수 있다. 이걸 51% 공격이라 한다.</p>\
+<p>과반의 속도로 로또를 긁으면, 남들보다 빨리 '자기 버전의 장부'를 길게 만들 수 있기 때문이다. 규칙상 가장 긴 장부가 진짜로 인정되니까.</p>\
+<p>무섭게 들린다. 그런데 왜 17년간 한 번도 안 일어났을까?</p>");
+
+pg("PART 5 · 원리","배보다 배꼽",
+"<p>답은 돈이다. 비트코인 채굴 파워의 과반을 확보하려면 <span class='hl'>천문학적인 장비와 전기</span>가 필요하다. 웬만한 국가 예산급이다.</p>\
+<p>그 돈을 들여 공격에 성공하면? 비트코인 신뢰가 무너져 가격이 폭락한다. 공격자가 손에 쥔 것도 같이 휴지가 된다. 수십조를 태워서 휴지를 얻는 사업인 것이다.</p>\
+<p class='pull'>차라리 그 채굴 파워로 정직하게 채굴하는 게 훨씬 남는 장사다. 배신보다 협력이 이득이 되도록 설계된 게임. 이게 비트코인 보안의 진짜 정체다.</p>");
+
+pg("PART 5 · 원리","정직이 돈이 되는 설계",
+"<p>정리하면, 비트코인은 \u201C사람은 선하다\u201D는 가정 위에 서 있지 않다. 정반대다. <span class='hl'>\u201C사람은 자기 이익을 좇는다\u201D</span>는 차가운 가정 위에 서 있다.</p>\
+<p>그리고 그 이기심의 방향을 시스템 유지 쪽으로 틀어놓았다. 채굴자는 돈 벌려고 장부를 쓰고, 공격자는 손해라서 공격을 접고, 보유자는 자산 가치를 위해 규칙을 지킨다.</p>\
+<p>선의가 아니라 인센티브로 굴러가는 신뢰. 경제학과 암호학의 합작품이다.</p>");
+
+pg("PART 5 · 원리","비트코인도 업데이트 되나요?",
+"<p>\u201C코드라면서요. 그럼 버전 업데이트도 하나요?\u201D 된다. 실제로 조금씩 개선돼 왔다. 다만 방식이 지독하게 보수적이다.</p>\
+<p>스마트폰 앱은 회사가 결정하면 강제 업데이트된다. 비트코인은 강제할 회사가 없으므로, <span class='hl'>전 세계 참여자들의 광범위한 합의</span>가 모여야만 바뀐다. 그래서 사소한 개선에도 몇 년씩 걸린다.</p>\
+<p class='pull'>답답해 보이는가? 뒤집어 보자. 내 돈의 규칙이 누군가의 결정으로 하룻밤에 바뀌지 않는다는 뜻이다. 느림은 버그가 아니라 기능이다.</p>");
+
+pg("PART 5 · 원리","에너지 논쟁: 비판",
+"<p>공정하게, 가장 큰 비판도 다루자. <span class='hl'>\u201C비트코인은 전기를 너무 많이 쓴다.\u201D</span></p>\
+<p>사실이다. 전 세계 채굴에 들어가는 전력은 웬만한 중견 국가의 소비량과 비교된다. 기후 위기 시대에 로또 긁기에 그만한 전기를 태우는 게 옳으냐는 지적은 뼈아프다.</p>\
+<p>이 비판 때문에 동생 이더리움은 아예 다른 길(지분증명)을 택했다. 6부에서 다룬다.</p>");
+
+pg("PART 5 · 원리","에너지 논쟁: 반론",
+"<p>반론도 있다. ① 금 채굴과 기존 은행 시스템(전 세계 지점, 전산, ATM…)도 막대한 에너지를 쓴다. ② 채굴은 전기가 남아도는 곳(버려지는 수력·태양광 등)을 찾아가는 성질이 있어, 잉여 에너지의 구매자가 되기도 한다. ③ 그 전기는 낭비가 아니라 '위조 불가능한 보안'의 원가다.</p>\
+<p class='pull'>\u201C그만한 전기를 쓸 가치가 있는가\u201D는 결국 \u201C국경 없는 중립적 장부에 얼마의 가치를 매기는가\u201D의 문제다. 정답은 없다. 판단은 각자의 몫.</p>");
+
+pg("쉬어가기","채굴장 풍경",
+"<p>오늘날의 채굴은 노트북 시대가 아니다. 채굴 전용 기계 수만 대가 창고를 가득 채우고 굉음을 내며 로또를 긁는다. 열이 어마어마해서 냉각이 사업의 핵심이고, 그래서 채굴장은 전기 싸고 추운 곳을 찾아 유목민처럼 이동한다.</p>\
+<p>수력 발전소 옆, 화산 지열 옆, 버려진 유전의 가스 옆… \u201C세상에서 가장 싼 전기는 어디인가\u201D를 찾는 글로벌 보물찾기. 채굴 산업의 실체다.</p>");
+
+pg("PART 5 · 원리","원리 요약 한 페이지",
+"<p>5부 전체를 한 페이지로 접는다.</p>\
+<p>① 돈 문제는 장부 문제다. ② 비트코인 = 전원이 사본을 가진 장부. ③ 블록 = 페이지, 체인 = 지문(해시)으로 엮인 사슬. ④ 과거 조작 = 이후 전 페이지를 다시 쓰는 일 = 사실상 불가. ⑤ 페이지 쓸 자격은 비싼 로또(작업증명)로. ⑥ 보상은 새 코인 + 수수료, 새 코인은 4년마다 반감. ⑦ 총량 2,100만 개, 2140년 발행 종료. ⑧ 코인은 장부에, 열쇠(개인키)는 내 손에.</p>\
+<p class='pull'>이 여덟 줄이면, 비트코인 원리의 골격은 전부다.</p>");
+
+/* ============================================================
+   PART 6 — 이더리움
+============================================================ */
+part("PART 6","◆","이더리움","19살 천재가 물었다.\n\u201C이 장부로 돈 말고 다른 것도 되지 않을까?\u201D", true);
+
+pg("PART 6 · 이더리움","새 인물의 등장",
+"<p>1994년생 러시아계 캐나다인, <span class='ehl'>비탈릭 부테린</span>. 십대 시절 비트코인에 빠져 관련 매체에 글을 쓰던 소년이었다.</p>\
+<p>그런데 이 소년, 비트코인을 사랑하면서도 불만이 있었다. \u201C이 위대한 발명품이 <span class='ehl'>할 줄 아는 게 송금뿐</span>이라니, 아깝지 않은가?\u201D</p>\
+<p>2013년, 19살의 그는 자기 생각을 백서로 써낸다. 그것이 이더리움의 시작이다.", true);
+
+pg("PART 6 · 이더리움","계산기와 스마트폰",
+"<p>비탈릭의 생각을 비유하면 이렇다. 비트코인은 훌륭한 <span class='hl'>계산기</span>다. '돈 주고받기'라는 한 가지 일을 극도로 안전하게 해낸다. 단순해서 강하다.</p>\
+<p>비탈릭이 만들고 싶었던 건 <span class='ehl'>스마트폰</span>이었다. 같은 블록체인 기술 위에, 누구나 <span class='ehl'>앱(프로그램)</span>을 올릴 수 있는 판. 송금은 그 수많은 앱 중 하나일 뿐인 세계.</p>\
+<p class='pull eth-p'>비트코인 = 한 가지를 완벽하게. 이더리움 = 무엇이든 가능하게. 형제의 성격 차이는 여기서 갈린다.</p>", true);
+
+pg("PART 6 · 이더리움","월드 컴퓨터라는 꿈",
+"<p>이더리움의 별명은 <span class='ehl'>'월드 컴퓨터'</span>다. 전 세계에 흩어진 수많은 컴퓨터가 하나의 거대한 컴퓨터처럼 프로그램을 실행한다는 뜻이다.</p>\
+<p>이 컴퓨터의 특징: 주인이 없고, 끌 수 없고, 실행 결과를 누구도 조작할 수 없다. 비트코인이 '멈출 수 없는 장부'라면, 이더리움은 <span class='ehl'>'멈출 수 없는 컴퓨터'</span>를 꿈꿨다.</p>\
+<p>2015년 7월, 이 꿈은 실제로 켜졌다. 그리고 지금까지 단 한 번도 꺼진 적이 없다.</p>", true);
+
+pg("PART 6 · 이더리움","스마트 컨트랙트란",
+"<p>이더리움의 심장은 <span class='ehl'>스마트 컨트랙트(똑똑한 계약)</span>다. 거창한 이름이지만 본질은 간단하다. <span class='ehl'>\u201C조건이 맞으면 자동 실행되는, 블록체인에 새겨진 약속\u201D</span>.</p>\
+<p>보통의 계약은 종이에 쓰고, 어기면 소송을 한다. 스마트 컨트랙트는 코드로 쓰고, 조건이 충족되면 그냥 실행된다. 어길 방법 자체가 없다. 중개인도, 법원도 필요 없다.</p>", true);
+
+pg("PART 6 · 이더리움","자판기를 떠올리세요",
+"<p>스마트 컨트랙트의 가장 좋은 비유는 <span class='ehl'>자판기</span>다.</p>\
+<p>자판기는 계약서다. \u201C1,500원을 넣고 3번을 누르면 콜라를 준다.\u201D 점원도, 사장도, 신뢰도 필요 없다. 조건(돈+버튼)이 맞으면 결과(콜라)가 기계적으로 나온다. 자판기가 \u201C오늘은 기분이 안 좋아서 못 줘\u201D 하는 일은 없다.</p>\
+<p class='pull eth-p'>이더리움은 이런 자판기를 '무엇이든 파는 버전'으로 만들 수 있는 공장이다. 보험 자판기, 대출 자판기, 경매 자판기…</p>", true);
+
+pg("PART 6 · 이더리움","예시: 중개인 없는 중고 거래",
+"<p>중고 거래의 영원한 공포. \u201C돈 먼저? 물건 먼저?\u201D 서로 못 믿어서 중개(에스크로) 서비스에 수수료를 낸다.</p>\
+<p>스마트 컨트랙트 버전: \u201C구매자의 돈을 컨트랙트가 보관하다가, 물건 수령 확인이 되면 판매자에게 자동 송금. 기한 내 확인이 없으면 자동 환불.\u201D 이 규칙이 코드로 새겨져, 누구도 — 개발자조차 — 중간에서 손을 못 댄다.</p>\
+<p>사람 중개인의 자리를 코드가 대신한다. 이게 이더리움이 연 가능성의 기본형이다.</p>", true);
+
+pg("PART 6 · 이더리움","이더(ETH)와 가스비",
+"<p>이더리움 세계의 돈이 <span class='ehl'>이더(ETH)</span>다. 그런데 이더의 중요한 역할이 하나 더 있다. 바로 <span class='ehl'>연료</span>.</p>\
+<p>월드 컴퓨터에 일을 시키려면(송금이든 앱 실행이든) 사용료를 내야 한다. 이 사용료를 <span class='ehl'>가스비</span>라 부르고, 이더로 낸다. 자동차가 움직이려면 가솔린(gas)이 필요하듯, 이더리움이 돌아가려면 가스가 필요한 것이다.</p>\
+<p class='pull eth-p'>비트코인의 BTC가 '디지털 금'이라면, 이더리움의 ETH는 '디지털 석유'에 가깝다. 이 비유는 7부에서 다시 만난다.</p>", true);
+
+pg("PART 6 · 이더리움","가스비의 애환",
+"<p>가스비는 고정이 아니다. 네트워크가 붐비면 치솟는다. 택시 할증과 같다. 모두가 한 도로에 몰리면 요금이 뛴다.</p>\
+<p>호황기의 이더리움에서는 몇만 원어치 송금에 수수료가 수십만 원 나오는 웃픈 일도 벌어졌다. \u201C배보다 배꼽\u201D의 시대.</p>\
+<p>이 문제를 풀기 위한 노력(레이어2 등)은 뒤에서 짧게 다룬다. 지금은 이것만: <span class='ehl'>이더리움의 최대 고민은 늘 '비싸고 붐빈다'였다.</span></p>", true);
+
+pg("PART 6 · 이더리움","시련: DAO 해킹 (2016)",
+"<p>출시 이듬해, 이더리움은 존폐급 시련을 맞는다. 이더리움 위에 만들어진 'The DAO'라는 대형 투자 펀드 컨트랙트에서 <span class='ehl'>코드 허점</span>이 발견됐고, 해커가 당시 유통량의 상당 부분에 해당하는 거액의 이더를 빼돌린 것이다.</p>\
+<p>주의: 이더리움 자체가 뚫린 게 아니라, 그 위에 지어진 '앱의 코드'에 구멍이 있었다. 튼튼한 땅 위에 부실 건물이 올라간 격이다.</p>\
+<p>문제는 다음이었다. 이 사고를 어떻게 수습할 것인가?</p>", true);
+
+pg("PART 6 · 이더리움","되돌린 역사: 하드포크",
+"<p>이더리움 커뮤니티는 격론 끝에 초강수를 둔다. <span class='ehl'>장부를 해킹 이전으로 되돌리는 업데이트(하드포크)</span>를 단행한 것이다. 피해자의 돈은 돌아왔다.</p>\
+<p>하지만 일부는 반발했다. \u201C블록체인의 생명은 불변성인데, 사람이 장부를 되돌리면 그게 무슨 블록체인인가!\u201D 이들은 되돌리지 않은 원래 체인에 남았고, 그것이 지금의 <span class='ehl'>이더리움 클래식(ETC)</span>이다.</p>\
+<p class='pull eth-p'>하나의 사고, 두 갈래의 철학, 두 개의 체인. 블록체인 역사상 가장 유명한 갈림길이다.</p>", true);
+
+pg("PART 6 · 이더리움","그 사건이 남긴 질문",
+"<p>DAO 사태는 지금도 유효한 질문을 남겼다. <span class='ehl'>\u201C코드가 법인가(Code is Law)?\u201D</span></p>\
+<p>코드대로 실행됐을 뿐이라면, 해커의 인출도 '규칙 내 행동'인가? 아니면 명백한 도둑질이니 공동체가 개입해야 하는가? 기계의 원칙과 인간의 정의가 충돌한 사건.</p>\
+<p>정답은 아직 없다. 다만 이 사건은 보여줬다. 탈중앙 시스템도 결국 그 위에 선 <span class='ehl'>사람들의 합의</span>로 움직인다는 것을.</p>", true);
+
+pg("PART 6 · 이더리움","ICO 붐: 1인 1코인 시대 (2017)",
+"<p>2017년, 이더리움의 '앱 공장' 기능이 대유행을 만든다. 누구나 이더리움 위에서 토큰을 발행해 자금을 모으는 <span class='ehl'>ICO</span>가 폭발한 것이다. 스타트업 주식 공모의 코인판이라 보면 된다.</p>\
+<p>혁신적 프로젝트도 나왔지만, 백서 한 장 들고 수백억을 모으는 사기도 넘쳐났다. 2017년 광풍의 상당 부분은 이 ICO 열기였고, 거품이 꺼지며 수많은 토큰이 휴지가 됐다.</p>\
+<p>도구는 죄가 없다지만, 도구가 좋을수록 사기꾼도 신나는 법이다.</p>", true);
+
+pg("PART 6 · 이더리움","고양이가 컴퓨터를 멈춘 날",
+"<p>2017년 말의 귀여운(?) 사건 하나. <span class='ehl'>크립토키티</span>라는 디지털 고양이 수집·교배 게임이 이더리움에서 대히트를 쳤다.</p>\
+<p>고양이 거래가 폭주하자 월드 컴퓨터 전체가 마비 수준으로 느려졌다. 전 세계 금융 혁신을 꿈꾸는 네트워크가 고양이 때문에 멈춘 것이다.</p>\
+<p class='pull eth-p'>웃긴 사건이지만 의미는 컸다. ① 사람들은 블록체인 위의 '디지털 소유물'에 진심이다(NFT의 예고편). ② 이더리움은 확장성 문제를 풀어야 산다.</p>", true);
+
+pg("PART 6 · 이더리움","DeFi: 은행 없는 은행",
+"<p>2020년경부터 이더리움 위에 <span class='ehl'>DeFi(탈중앙 금융)</span>라는 생태계가 만개했다. 예금, 대출, 환전, 이자… 은행이 하던 일을 스마트 컨트랙트(자판기)들이 대신하는 것이다.</p>\
+<p>은행원 없이 대출이 실행되고, 지점 없이 24시간 환전이 돌아간다. 물론 코드 허점을 노린 해킹, 청산 위험 등 사고도 끊이지 않았다. 은행원이 없다는 건, 사고 때 멱살 잡을 사람도 없다는 뜻이니까.</p>\
+<p>혁신과 사고가 뒤엉킨 무법지대 실험실. DeFi의 현재형이다.</p>", true);
+
+pg("PART 6 · 이더리움","NFT: 디지털 원본 증명서",
+"<p>2021년의 주인공은 <span class='ehl'>NFT</span>였다. 한 줄 요약: <span class='ehl'>\u201C디지털 파일에 붙이는, 위조 불가능한 원본 증명서.\u201D</span></p>\
+<p>디지털 그림은 무한 복사가 된다. 그런데 NFT는 \u201C이 그림의 '원본 소유자'는 이 주소다\u201D를 블록체인 장부에 새긴다. 복사본이 아무리 돌아다녀도 원본 증명서는 하나다.</p>\
+<p>\u201C우클릭 저장하면 되는데 왜 사?\u201D라는 조롱이 쏟아졌다. 그런데… 이 질문, 어디서 많이 듣던 것 아닌가?</p>", true);
+
+pg("PART 6 · 이더리움","미술관에서 들었던 그 질문",
+"<p>\u201C사진 찍으면 되는데 왜 진품 그림을 수십억에 사?\u201D — 미술 시장이 수백 년간 들어온 오래된 질문이다. NFT를 향한 조롱과 정확히 같은 구조다. (미술 시장 이야기는 8부에서 제대로 다룬다.)</p>\
+<p>사람들이 사는 것은 이미지가 아니라 <span class='ehl'>'원본이라는 사회적 합의'</span>다. 미술 시장이 수백 년간 증명해온 그 수요가, 디지털 세계로 넘어온 실험이 NFT였다.</p>\
+<p class='pull eth-p'>거품은 요란하게 꺼졌지만, '디지털 소유권 증명'이라는 기술 자체는 남았다. 게임 아이템, 티켓, 등기부… 조용한 활용은 계속되고 있다.</p>", true);
+
+pg("PART 6 · 이더리움","DAO: 사장 없는 회사",
+"<p>이더리움이 낳은 또 하나의 개념, <span class='ehl'>DAO(탈중앙 자율 조직)</span>. 쉽게 말해 <span class='ehl'>'사장 없는 회사'</span>다.</p>\
+<p>회사의 정관을 스마트 컨트랙트로 짜고, 의사결정은 토큰 보유자 투표로, 결정된 일은 코드가 자동 집행한다. 국경 없는 조합원들이 만든 디지털 협동조합인 셈이다.</p>\
+<p>이상은 아름답고 현실은 삐걱댄다. 투표율 저조, 고래(대량 보유자)의 전횡 등 사람 사는 동네 문제가 그대로 재현된다. 그래도 '조직'의 새로운 형태 실험으로서 진행 중이다.</p>", true);
+
+pg("PART 6 · 이더리움","이더리움의 양심 고백",
+"<p>여기까지 보면 이더리움도 초기에는 비트코인과 같은 <span class='ehl'>작업증명(로또 긁기)</span>으로 돌아갔다. 그 말은, 전기 먹는 하마라는 비판도 같이 받았다는 뜻이다.</p>\
+<p>'세상을 바꾸는 컴퓨터'를 표방하면서 기후에 부담을 준다는 모순. 이더리움 커뮤니티는 이 문제를 정면 돌파하기로 한다.</p>\
+<p>계획의 이름은 <span class='ehl'>'The Merge(더 머지)'</span>. 달리는 차의 엔진을 통째로 바꾸는 수술이었다.</p>", true);
+
+pg("PART 6 · 이더리움","지분증명: 담보 잡는 방식",
+"<p>새 엔진의 이름은 <span class='ehl'>지분증명(PoS)</span>. 로또 긁기(전기 소모) 대신, <span class='ehl'>보증금</span>으로 신뢰를 만드는 방식이다.</p>\
+<p>장부 페이지를 쓰고 싶은 사람은 이더 32개를 <span class='ehl'>담보로 예치</span>한다. 시스템이 예치자 중에서 페이지 작성자를 추첨한다. 정직하게 쓰면 보상을 받고, 부정을 저지르면 <span class='ehl'>담보를 몰수</span>당한다(슬래싱).</p>\
+<p class='pull eth-p'>작업증명: \u201C전기를 태웠으니 믿어줘.\u201D 지분증명: \u201C내 돈을 걸었으니 믿어줘.\u201D 신뢰의 담보가 '땀'에서 '보증금'으로 바뀐 것이다.</p>", true);
+
+pg("PART 6 · 이더리움","더 머지: 2022.9",
+"<p>2022년 9월, 이더리움은 실제로 이 수술을 해냈다. 수많은 앱과 수백조 원의 자산이 돌아가는 네트워크를 <span class='ehl'>단 1초도 멈추지 않고</span> 작업증명에서 지분증명으로 갈아탄 것이다.</p>\
+<p>결과: 이더리움의 전력 소비가 약 <span class='ehl'>99.9% 감소</span>했다. 도시 하나의 전기를 쓰던 네트워크가 사실상 일반 서버 수준이 됐다.</p>\
+<p>비행 중인 여객기의 엔진 교체에 성공한 셈. 기술사에 남을 사건이다.</p>", true);
+
+pg("PART 6 · 이더리움","발행량: 형과 정반대",
+"<p>공급 정책도 형과 딴판이다. 비트코인: <span class='hl'>2,100만 개 고정, 끝.</span> 이더리움: <span class='ehl'>총량 상한이 없다.</span> 필요에 따라 계속 발행된다.</p>\
+<p>\u201C그럼 무한정 늘어나 가치가 희석되는 것 아냐?\u201D 그래서 이더리움은 2021년부터 재미있는 장치를 달았다. 가스비의 일부를 <span class='ehl'>소각(영구 파괴)</span>하는 것이다.</p>\
+<p>네트워크가 붐빌수록 태워 없어지는 이더가 늘어나, 때로는 발행량보다 소각량이 많아 총량이 줄기도 한다. 고정 대신 '조절'을 택한 철학이다.</p>", true);
+
+pg("PART 6 · 이더리움","속도: 10분 vs 12초",
+"<p>장부 페이지 넘어가는 속도도 다르다. 비트코인은 약 <span class='hl'>10분</span>에 한 블록, 이더리움은 약 <span class='ehl'>12초</span>에 한 블록이다.</p>\
+<p>왜 비트코인은 느리게 뒀을까? 안정성이다. 가치 저장고는 빠를 필요가 없고, 느린 만큼 보수적이고 튼튼하다. 반면 앱이 돌아가는 컴퓨터는 반응이 빨라야 한다.</p>\
+<p class='pull eth-p'>금고 문은 천천히 열려도 되지만, 스마트폰은 12초도 길다. 각자의 용도에 맞는 속도다.</p>", true);
+
+pg("PART 6 · 이더리움","남은 숙제: 붐비는 도로",
+"<p>지분증명 전환으로 전기 문제는 풀었지만, '비싸고 붐빈다'는 숙제는 남았다. 이더리움의 해법 방향은 <span class='ehl'>레이어2</span>라 불리는 고가도로다.</p>\
+<p>본 도로(이더리움)에 모든 차가 몰리는 대신, 위에 고속도로를 여러 층 올려 거래를 처리하고, 결과 요약만 본 도로에 기록하는 방식이다. 도로는 그대로 두고 교통 시스템을 입체화하는 것.</p>\
+<p>자세히는 이 책의 범위를 넘는다. \u201C이더리움은 지금도 확장 공사 중\u201D 정도로 기억하면 충분하다.</p>", true);
+
+pg("쉬어가기","비탈릭이라는 사람",
+"<p>비탈릭 부테린에 관한 소소한 사실들. 어릴 때 엑셀보다 빨리 암산을 했다는 소년이었고, 대학을 중퇴하고 이더리움에 올인했다. 지금도 재산 대부분을 이더로 두고, 백팩 하나 메고 전 세계를 떠돈다.</p>\
+<p>수조 원대 자산가인데 패션은 늘 화제(나쁜 쪽으로)이고, 거액을 전염병 구호 등에 기부해왔다. 사토시가 '얼굴 없는 신화'라면, 비탈릭은 '너무 인간적인 천재'다. 두 창시자의 캐릭터마저 두 코인을 닮았다.</p>", true);
+
+pg("PART 6 · 이더리움","이더리움 요약 한 페이지",
+"<p>6부를 한 페이지로 접는다.</p>\
+<p>① 이더리움 = 블록체인 위의 월드 컴퓨터. ② 핵심은 스마트 컨트랙트 = 조건 충족 시 자동 실행되는 자판기. ③ ETH는 화폐이자 연료(가스비). ④ DAO 해킹 → 장부를 되돌린 하드포크 → ETH/ETC 분리. ⑤ ICO·DeFi·NFT·DAO, 굵직한 실험은 대부분 이 위에서 벌어졌다. ⑥ 2022년 더 머지로 지분증명 전환, 전기 사용 99.9% 절감. ⑦ 발행량 상한 없음, 대신 소각으로 조절. ⑧ 블록 12초, 남은 숙제는 확장성.</p>", true);
+
+/* ============================================================
+   PART 7 — 비트코인 vs 이더리움
+============================================================ */
+part("PART 7","⚖","형과 아우, 무엇이 다른가","같은 핏줄, 다른 인생.\n비교하면 둘 다 선명해집니다.");
+
+pg("PART 7 · 비교","금과 석유",
+"<p>둘의 차이를 한 줄로 압축한 유명한 비유가 있다. <span class='hl'>비트코인은 디지털 금</span>, <span class='ehl'>이더리움은 디지털 석유</span>.</p>\
+<p>금은 그 자체로 가치를 '저장'한다. 가만히 금고에 있는 게 일이다. 석유는 태워서 무언가를 '움직인다'. 기계를 돌리는 연료다.</p>\
+<p>비트코인은 보유가 목적이 되는 자산, 이더는 월드 컴퓨터를 돌리는 연료. 출발점이 다르다.</p>");
+
+pg("PART 7 · 비교","목적: 저장 vs 실행",
+"<p><span class='hl'>비트코인의 꿈</span>: 국가와 은행 없이 돌아가는, 위조 불가능한 돈. 그래서 기능을 최소로 줄이고 안전을 최대로 키웠다.</p>\
+<p><span class='ehl'>이더리움의 꿈</span>: 누구도 끌 수 없는 세계 컴퓨터. 그래서 기능을 최대로 열고, 그만큼 복잡함을 감수했다.</p>\
+<p class='pull'>단순해서 강한 형, 복잡해서 다재다능한 아우. 어느 쪽이 낫냐는 질문은 \u201C금고가 나아, 컴퓨터가 나아?\u201D만큼 이상한 질문이다.</p>");
+
+pg("PART 7 · 비교","공급: 고정 vs 조절",
+"<p><span class='hl'>비트코인</span>: 총 2,100만 개. 헌법처럼 박제. 희소성이 정체성의 핵심이다.</p>\
+<p><span class='ehl'>이더리움</span>: 상한 없음. 대신 소각 장치로 유통량을 조절. 필요하면 정책(코드)을 업데이트한다.</p>\
+<p>화폐 철학으로 보면, 비트코인은 \u201C통화 정책은 아예 없는 게 최고\u201D파, 이더리움은 \u201C좋은 통화 정책을 계속 설계하자\u201D파다. 금본위제와 중앙은행 논쟁의 디지털 재연 같기도 하다.</p>");
+
+pg("PART 7 · 비교","합의: 땀 vs 보증금",
+"<p>장부 지키는 방식. <span class='hl'>비트코인 = 작업증명(PoW)</span>. 전기와 계산이라는 물리적 비용, 즉 '땀'으로 신뢰를 산다. 17년 무사고의 검증된 방식이지만 전기를 많이 쓴다.</p>\
+<p><span class='ehl'>이더리움 = 지분증명(PoS)</span>. 코인을 담보로 거는 '보증금'으로 신뢰를 산다. 전기를 99.9% 아끼지만, 역사가 상대적으로 짧고 \u201C가진 자가 더 갖는 구조\u201D라는 비판도 있다.</p>\
+<p class='pull'>완벽한 방식은 없다. 무엇을 포기하고 무엇을 지킬지의 선택이 있을 뿐.</p>");
+
+pg("PART 7 · 비교","창시자: 없음 vs 있음",
+"<p>의외로 중요한 차이가 이거다. <span class='hl'>비트코인의 창시자는 사라졌다.</span> 압박할 사람도, 방향을 틀 사람도 없다. 그래서 비트코인은 '누구의 프로젝트'가 아니라 자연현상처럼 취급받는다.</p>\
+<p><span class='ehl'>이더리움에는 비탈릭이 있다.</span> 공식 권력은 없지만 그의 발언은 방향에 큰 영향을 준다. 덕분에 빠르고 과감한 진화(더 머지 같은)가 가능했지만, '사람'이라는 변수도 함께 안고 간다.</p>\
+<p>주인 없음의 강함 vs 리더 있음의 민첩함.</p>");
+
+pg("PART 7 · 비교","변화 속도: 거북이와 토끼",
+"<p><span class='hl'>비트코인은 극도로 보수적</span>이다. 코드 변경이 지독히 어렵고 느리다. 답답해 보이지만, '돈'의 입장에선 미덕이다. 내 금고의 규칙이 매달 바뀌면 그게 더 무섭다.</p>\
+<p><span class='ehl'>이더리움은 실험적</span>이다. 엔진 교체(더 머지) 같은 대수술도 해치운다. 컴퓨터 플랫폼은 진화를 멈추면 죽으니까.</p>\
+<p class='pull'>거북이는 금고를 지키고, 토끼는 신대륙을 달린다. 종목이 다르니 속도도 다르다.</p>");
+
+pg("PART 7 · 비교","사고의 역사도 다르다",
+"<p>비트코인 관련 대형 사고(Mt.Gox, FTX)는 전부 <span class='hl'>주변부(거래소)</span>에서 났다. 본체 장부는 무사고.</p>\
+<p>이더리움은 본체는 무사하지만, 그 위의 <span class='ehl'>앱(컨트랙트)들</span>에서 해킹이 잦았다. DAO 사태, 수많은 DeFi 해킹이 그렇다. 앱을 올릴 수 있는 개방성의 그림자다.</p>\
+<p>기능이 늘수록 공격받을 표면도 는다. 형의 단순함이 왜 '기능'인지 여기서 드러난다.</p>");
+
+pg("PART 7 · 비교","한눈에 보는 비교표",
+"<p><span class='hl'>비트코인</span> ↔ <span class='ehl'>이더리움</span></p>\
+<p>탄생: 2009 ↔ 2015<br>창시자: 사토시(실종) ↔ 비탈릭(활동 중)<br>별명: 디지털 금 ↔ 디지털 석유<br>목적: 가치 저장 ↔ 앱 실행 플랫폼<br>총량: 2,100만 고정 ↔ 상한 없음+소각<br>합의: 작업증명(땀) ↔ 지분증명(보증금)<br>블록: 약 10분 ↔ 약 12초<br>성격: 보수·단순 ↔ 실험·다기능</p>\
+<p class='pull'>표가 말해주는 결론: 이 둘은 경쟁자라기보다 다른 종목의 선수다.</p>");
+
+pg("PART 7 · 비교","\u201C그래서 뭐가 더 좋아요?\u201D",
+"<p>가장 많이 받는 질문이다. 그리고 내 대답은 늘 같다. <span class='hl'>\u201C질문이 살짝 잘못됐다.\u201D</span></p>\
+<p>\u201C금이랑 전기 중에 뭐가 더 좋아요?\u201D라고 물으면 뭐라 답하겠는가. 저장이 목적이면 금이고, 기계를 돌리려면 전기다. 용도가 다르면 비교 축도 달라진다.</p>\
+<p>좋은 질문은 이것이다. \u201C나는 이 물건들의 <span class='hl'>어떤 쓸모</span>를 믿는가?\u201D 답은 각자 다를 수 있고, 달라도 된다.</p>");
+
+pg("PART 7 · 비교","나머지 동생들은?",
+"<p>알트코인이 이더리움만 있는 건 아니다. 초스피드를 내세운 체인, 특정 산업 특화 체인, 국가 간 송금 특화 코인(리플) 등 수천 종이 있다.</p>\
+<p>다만 냉정한 사실 하나. 이 수천 종의 대부분은 지난 사이클들에서 조용히 사라졌다. 살아남아 존재감을 유지하는 것은 소수다.</p>\
+<p class='pull'>코인이라고 다 같은 코인이 아니다. \u201C이건 무슨 문제를 풀려는 물건인가\u201D에 답 못 하는 코인은, 답을 알 때까지 구경만 하는 게 안전하다.</p>");
+
+pg("PART 7 · 비교","도지코인이라는 농담",
+"<p>알트코인 얘기가 나온 김에, 가장 이상한 생존자 이야기. <span class='hl'>도지코인</span>은 2013년 두 개발자가 코인 광풍을 '비웃으려고' 만든 농담이었다. 마스코트도 유행하던 강아지 짤.</p>\
+<p>그런데 그 농담이 살아남았다. 커뮤니티가 붙고, 유명 인사가 언급할 때마다 폭등하며, 시가총액 상위권을 들락거린다.</p>\
+<p>교훈이라면: 이 시장에서 가격을 만드는 건 기술만이 아니라 <span class='hl'>이야기와 공동체</span>라는 것. 좋든 싫든, 그게 현실이다.</p>");
+
+pg("PART 7 · 비교","근데 왜 같이 오르내리죠?",
+"<p>날카로운 관찰이다. 목적도 구조도 다르다면서, 차트를 보면 비트코인과 이더리움은 (그리고 대부분의 코인은) <span class='hl'>거의 같이 오르고 같이 떨어진다.</span></p>\
+<p>이유: 시장이 아직 이 둘을 '서로 다른 물건'이 아니라 <span class='hl'>'코인이라는 한 바구니'</span>로 취급하기 때문이다. 돈이 몰릴 땐 바구니째 사고, 무서울 땐 바구니째 던진다.</p>\
+<p class='pull'>물건의 차이는 이해가 자란 뒤에야 가격에 반영된다. 시장의 이해는… 아직 자라는 중이다. 우리가 이 책에서 한 공부가 시장 평균보다 앞서 있는 이유이기도 하다.</p>");
+
+pg("PART 7 · 비교","비교 요약 한 페이지",
+"<p>7부를 한 페이지로.</p>\
+<p>① 비트코인 = 디지털 금(저장), 이더리움 = 디지털 석유(연료·실행). ② 공급: 고정 vs 조절. ③ 합의: 땀(PoW) vs 보증금(PoS). ④ 창시자: 실종 vs 활동 중. ⑤ 문화: 보수 vs 실험. ⑥ \u201C뭐가 더 좋냐\u201D보다 \u201C어떤 쓸모를 믿느냐\u201D가 옳은 질문. ⑦ 그 외 수천 개 알트코인 대부분은 사라졌고, 살아남는 건 이야기와 쓸모를 가진 소수다.</p>");
+
+/* ============================================================
+   PART 8 — 부자의 시선
+============================================================ */
+part("PART 8","♛","부자의 시선","미술품과 금을 사는 사람의 눈으로 보면,\n비트코인의 자리가 보입니다.");
+
+pg("PART 8 · 부자의 시선","미술 시장의 미스터리",
+"<p>원리와 역사를 알았으니, 이제 처음의 직관으로 돌아가자. 나는 비트코인을 볼 때 두 시장을 떠올린다. 첫째, <span class='hl'>미술 시장</span>.</p>\
+<p>부자들은 그림을 사고판다. 솔직히 이상하지 않은가? 사진 한 장 찍어두고 보면 될 것 같은데, 굳이 수십억을 주고 진품을 산다.</p>\
+<p>NFT 편에서 봤듯, 그들이 사는 건 이미지가 아니라 '원본이라는 합의'다. 그런데 그게 전부일까? 한 꺼풀 더 있다.</p>");
+
+pg("PART 8 · 부자의 시선","금 시장의 미스터리",
+"<p>둘째, <span class='hl'>금 시장</span>. 금은 무겁고, 순도 재기 어렵고, 도둑맞을 수도 있다. 이자도 배당도 없다. 그런데도 국제 정세가 불안해지면 사람들은 기어코 금을 산다. 수천 년째.</p>\
+<p>그림도 금도, '수익'의 논리로는 잘 설명이 안 된다. 다른 논리가 작동하고 있는 것이다.</p>\
+<p class='pull'>그 논리는 부자가 되어봐야 보인다. 그러니 다음 장에서, 잠깐 부자가 되어보자. 상상은 공짜니까.</p>");
+
+pg("PART 8 · 부자의 시선","내가 8000억 부자라면",
+"<p>자, 눈을 감고 상상하자. 나는 <span class='hl'>8천억 원</span>을 가진 부자다. (기분 좋다.)</p>\
+<p>그런데 현실이 끼어든다. 재산세, 취득세, 상속세… 다 합치면 최소 절반은 세금으로 나간다고 치자. <span class='mono'>4천억 원</span>. 절반이 증발한다. 속이 쓰리다.</p>\
+<p>부자가 되는 순간, 인생 최대의 고민은 '버는 것'에서 <span class='hl'>'지키는 것'</span>으로 바뀐다.</p>");
+
+pg("PART 8 · 부자의 시선","정부를 100% 믿을 수 있나",
+"<p>지키는 자의 질문은 이어진다. \u201C정부가 내 자산을 100% 지켜줄까?\u201D \u201C내 나라는 영원히 안전할까?\u201D</p>\
+<p>역사를 아는 부자일수록 이 질문이 무겁다. 전쟁, 혁명, 몰수, 화폐 개혁, 초인플레이션… 한 세대에 한 번쯤은 어딘가에서 꼭 벌어졌던 일들이다.</p>\
+<p class='pull'>그래서 큰 부는 본능적으로 찾는다. \u201C국가 시스템 바깥에도 한 발 걸쳐둘 곳\u201D을. 그림과 금이 수백 년간 그 자리였다.</p>");
+
+pg("PART 8 · 부자의 시선","1000억을 옮기는 오래된 방법",
+"<p>누군가에게 1000억을 세금·수수료 없이 전달해야 한다고 하자. (합법성 논의는 잠시 접고, 물리적 가능성만 보자.)</p>\
+<p>은행 송금? 다 기록되고 다 보고된다. 현금? 트럭이 필요하다. 그래서 전통의 답이 <span class='hl'>그림 한 점</span> 또는 <span class='hl'>금괴</span>였다. 작은 부피에 큰 가치를 담아 조용히 건네는 것.</p>\
+<p>미술품 가격이 왜 그렇게 이상하게 비싼지에 대한, 한 가지 솔직한 설명이기도 하다.</p>");
+
+pg("PART 8 · 부자의 시선","그런데 은근히 번거롭다",
+"<p>하지만 그림과 금에는 고질적인 불편이 있다.</p>\
+<p>딱 1000억어치를 <span class='hl'>정확히 맞추기 어렵다</span>(그림 반 쪽을 찢어줄 순 없다). 옮길 때 <span class='hl'>조심해야 하고</span>(그림 한 점 들고 공항 통과를 상상해보라), <span class='hl'>특별히 보관</span>해야 한다(습도, 도난, 화재).</p>\
+<p>수백 년 묵은 이 불편함에, 어느 날 이상한 디지털 물건이 답을 내민다.</p>");
+
+pg("PART 8 · 부자의 시선","분할성: 정확히 쪼개진다",
+"<p>비트코인의 첫 번째 해법, <span class='hl'>분할성</span>. 1 BTC는 1억 사토시로 쪼개진다. 1000억이든 1억이든 10만 원이든, 원하는 액수를 소수점으로 정확히 맞춰 보낼 수 있다.</p>\
+<p>그림은 못 쪼갠다. 금은 쪼개려면 녹이고 다시 검증해야 한다. 비트코인은 숫자니까, 그냥 나뉜다.</p>");
+
+pg("PART 8 · 부자의 시선","운반성: 무게가 0이다",
+"<p>두 번째 해법, <span class='hl'>운반성</span>. 비트코인의 무게는 0이다. 금괴를 트럭에 싣는 대신, 열쇠(시드 문구 12단어)만 기억하면 전 재산이 함께 움직인다.</p>\
+<p>원리 편에서 배웠듯 코인은 장부에 있고, 내겐 열쇠만 있으면 된다. 머릿속에 1000억을 넣고 국경을 넘는 게 물리적으로 가능한 최초의 자산이다.</p>\
+<p class='pull'>그림은 못 쪼개고, 금은 무겁다. 비트코인은 쪼개지고, 가볍다. 부자들의 수백 년 숙제를 디지털이 슬쩍 풀어버린 것이다.</p>");
+
+pg("PART 8 · 부자의 시선","돈은 계속 늘어난다",
+"<p>부자의 세 번째 고민은 인플레이션이다. 세상의 자산은 계속 늘어난다. 나라들은 끊임없이 돈을 찍고, 금은 계속 채굴되고, 집도 계속 지어진다.</p>\
+<p>그래서 내 지갑 속 현금의 가치는 가만히 있어도 조금씩 줄어든다. <span class='hl'>어제의 1만 원과 오늘의 1만 원은, 같은 1만 원이 아니다.</span></p>\
+<p>돈을 그냥 쥐고 있는 것은 '천천히 잃는 것'이라는 사실. 부자들은 이걸 뼛속으로 안다.</p>");
+
+pg("PART 8 · 부자의 시선","무너지는 화폐들",
+"<p>심한 경우도 있다. 아프리카나 남아메리카의 몇몇 나라는 자국 화폐 가치가 폭삭 주저앉는다. 아침의 빵값과 저녁의 빵값이 다른 수준의 인플레이션.</p>\
+<p>그런 나라 사람들은 차라리 <span class='hl'>미국 달러</span>를 갖고 싶어 한다. 자기 나라 돈보다 남의 나라 돈이 더 안전하다고 느끼는 것이다. 슬프지만 현실이다.</p>\
+<p class='pull'>그리고 그런 곳일수록, 정부가 막을 수 없고 찍어낼 수도 없는 돈 — 비트코인 — 의 실사용이 먼저 자라난다. 사치품이 아니라 생존 도구로.</p>");
+
+pg("PART 8 · 부자의 시선","안 늘어나는 유일한 것",
+"<p>이제 퍼즐이 맞춰진다. 모든 자산이 늘어나는 세상에서, 비트코인은 <span class='hl'>2,100만 개에서 단 1개도 늘지 않는다</span>. 반감기라는 자동장치가 공급을 계속 조이고, 2140년이면 발행이 끝난다.</p>\
+<p>금은 그래도 매년 캐낸 만큼 늘어난다. 이 점에서 비트코인은 금보다도 희소하다. '디지털 금'이라는 별명이 과장이 아닌 이유다.</p>");
+
+pg("PART 8 · 부자의 시선","부자의 계산서",
+"<p>부자의 시선으로 최종 정리하면 이렇다.</p>\
+<p>지키고 싶다(국가 리스크 헤지) → 그림·금의 전통적 역할. 옮기고 싶다 → 분할성·운반성에서 비트코인 압승. 희석되기 싫다 → 공급 고정은 비트코인이 유일.</p>\
+<p class='pull'>비트코인이 오를지 내릴지는 몰라도, <span class='hl'>부자들이 왜 자꾸 쳐다보는지</span>는 이제 설명이 된다. \u201C사기인데 왜 안 죽지?\u201D의 답 절반이 여기 있다.</p>");
+
+pg("쉬어가기","의심 많은 당신에게",
+"<p>여기까지 읽고도 \u201C그래도 못 믿겠다\u201D는 분에게: 축하한다. 그 의심이 이 시장에서 가장 귀한 재능이다.</p>\
+<p>이 동네에서 제일 위험한 사람은 의심하는 사람이 아니라, 남의 확신을 빌려 온 사람이다. \u201C누가 오른대\u201D로 사고 \u201C누가 떨어진대\u201D로 파는 사람.</p>\
+<p>의심을 유지한 채 이해를 넓히는 것. 그게 이 책이 권하는 유일한 자세다.</p>");
+
+/* ============================================================
+   PART 9 — 실전 상식과 FAQ
+============================================================ */
+part("PART 9","Q","실전 상식과 FAQ","사라는 것도, 말라는 것도 아닙니다.\n다치지 말라는 것입니다.");
+
+pg("PART 9 · 실전","이 파트의 목적",
+"<p>여기까지 읽었다면 이론은 충분하다. 이제 실전 동네의 생활 상식이다.</p>\
+<p>미리 말해두면, 이 파트는 \u201C사는 법\u201D을 가르치지 않는다. <span class='hl'>\u201C다치지 않는 법\u201D</span>을 다룬다. 이 시장엔 상어가 많고, 상어는 초보의 냄새를 기가 막히게 맡는다.</p>\
+<p>지갑, 거래소, 사기 도감, 그리고 자주 묻는 질문들. 순서대로 간다.</p>");
+
+pg("PART 9 · 실전","지갑 상식: 핫과 콜드",
+"<p>지갑은 크게 둘로 나뉜다.</p>\
+<p><span class='hl'>핫월렛</span> — 인터넷에 연결된 지갑(스마트폰 앱 등). 편리하지만, 온라인이라는 건 해커의 손이 닿는 곳이라는 뜻이다.</p>\
+<p><span class='hl'>콜드월렛</span> — 인터넷과 분리된 지갑(USB형 전용 기기 등). 불편하지만 원격 해킹이 원천 차단된다.</p>\
+<p class='pull'>통념은 이렇다. 자주 쓰는 소액은 핫, 오래 둘 목돈은 콜드. 그리고 시드 문구는 어떤 경우에도 인터넷에 저장하지 않는다. 사진 촬영도, 메모 앱도, 이메일도 금지.</p>");
+
+pg("PART 9 · 실전","거래소 상식",
+"<p>거래소를 고를 때 볼 것들. ① <span class='hl'>업력과 규모</span> — 오래, 크게 살아남은 데는 이유가 있다. ② <span class='hl'>규제 준수</span> — 내 나라 당국에 정식 신고된 곳인가. ③ <span class='hl'>사고 이력</span> — 해킹·출금 중단 전적. ④ <span class='hl'>출금이 잘 되는가</span> — 넣기는 쉬운데 빼기 어려운 곳은 최악의 신호다.</p>\
+<p>그리고 역사 편의 교훈을 한 번 더. 거래소는 시장이지 은행이 아니며, 큰돈을 상시 보관하는 곳은 더더욱 아니다.</p>");
+
+pg("PART 9 · 실전","김치 프리미엄의 정체",
+"<p>2017년의 유행어, <span class='hl'>김치 프리미엄</span>. 같은 비트코인이 한국 거래소에서 해외보다 비싸게 거래되는 현상이다.</p>\
+<p>원인은 단순하다. 국내 수요는 몰리는데, 해외에서 싸게 사서 국내에 비싸게 파는 차익거래가 자본 이동 규제 때문에 어렵기 때문. 수요 과열이 섬처럼 갇히면 가격에 거품이 뜬다.</p>\
+<p class='pull'>참고로 김치 프리미엄이 치솟는 시기는 대개 국내 시장이 과열됐다는 신호로도 읽힌다. 프리미엄이 곧 흥분의 온도계인 셈.</p>");
+
+pg("PART 9 · 실전","스테이블코인이란",
+"<p>뉴스에 자주 나오는 <span class='hl'>스테이블코인</span>. 달러 같은 기존 화폐에 가치를 1:1로 고정하려는 코인이다. 코인 세계의 '주차장'이라 보면 된다. 변동성이 무서울 때 잠시 세워두는 곳.</p>\
+<p>단, '고정'은 저절로 되는 게 아니라 발행사가 담보(실제 달러 등)를 제대로 쌓아야 유지된다. 담보가 부실하면? 고정이 풀리며 무너진다.</p>\
+<p>2022년 루나 사태가 바로, 담보 대신 알고리즘으로 고정을 흉내 내던 스테이블코인의 붕괴였다. '스테이블'이라는 이름을 그대로 믿지 말 것.</p>");
+
+pg("PART 9 · 실전","CBDC: 정부의 디지털 화폐",
+"<p>각국 중앙은행이 연구 중인 <span class='hl'>CBDC(중앙은행 디지털 화폐)</span>. \u201C정부가 만드는 코인이면 비트코인이랑 비슷한 것 아냐?\u201D 정반대다.</p>\
+<p>기술은 비슷한 걸 쓸 수 있어도 철학이 거꾸로다. 비트코인은 <span class='hl'>관리자를 없애는</span> 프로젝트, CBDC는 <span class='hl'>관리자에게 더 정밀한 통제권을 주는</span> 프로젝트다. 모든 거래가 중앙에서 파악·통제될 수 있다.</p>\
+<p class='pull'>같은 '디지털 화폐'라는 옷을 입었지만, 하나는 탈중앙의 끝, 하나는 중앙화의 끝. 대체재가 아니라 대척점이다.</p>");
+
+pg("PART 9 · 실전","사기 도감 ①: 원금 보장형",
+"<p>이제 사기 도감이다. 1호는 고전 중의 고전, <span class='hl'>\u201C원금 보장, 월 10% 수익\u201D</span>형. 폰지 사기, 코인 리딩방, '전문가 방'이 여기 속한다.</p>\
+<p>공식은 늘 같다. 수익 보장을 약속하고 → 초반엔 실제로 수익을 지급하고(뒷사람 돈으로) → 지인을 데려오면 보상을 주고 → 어느 날 출금이 지연되다 → 잠적.</p>\
+<p class='pull'>변동성이 이 시장의 본질이다. 그 시장에서 '보장'이라는 단어를 쓰는 사람은, 무지하거나 사기꾼이거나 둘 다다.</p>");
+
+pg("PART 9 · 실전","사기 도감 ②: 피싱",
+"<p>2호는 <span class='hl'>피싱</span>. 진짜와 똑같이 생긴 가짜 거래소 사이트, 가짜 지갑 앱, \u201C보안 문제가 발견됐습니다\u201D라는 가짜 고객센터 연락.</p>\
+<p>목표는 하나, 당신의 비밀번호와 <span class='hl'>시드 문구</span>다. 원리 편에서 배웠듯 시드 문구 = 전 재산의 열쇠니까.</p>\
+<p>철칙 하나면 다 막힌다. <span class='hl'>시드 문구를 물어보는 사람은 100% 도둑이다.</span> 진짜 거래소도, 진짜 지갑 회사도, 그걸 물어볼 이유가 세상에 없다.</p>");
+
+pg("PART 9 · 실전","사기 도감 ③: 러그풀",
+"<p>3호는 <span class='hl'>러그풀(양탄자 빼기)</span>. 그럴듯한 신규 코인을 만들어 홍보하고, 투자금이 모이면 개발진이 물량을 던지고 잠적하는 수법이다. 이더리움 편에서 본 'ICO 붐'의 어두운 유산이다.</p>\
+<p>경계 신호: 개발진이 익명이고, 코드 감사를 안 받았고, 커뮤니티가 급조됐고, \u201C곧 대형 거래소 상장\u201D 소문만 무성한 코인.</p>\
+<p>비교 편의 원칙을 재활용하자. \u201C이 코인은 무슨 문제를 푸는가\u201D에 답이 없으면, 그 코인의 용도는 하나다. 당신 지갑 비우기.</p>");
+
+pg("PART 9 · 실전","만능 감별 질문",
+"<p>사기 도감을 관통하는 만능 질문을 하나 선물한다.</p>\
+<p class='pull'>\u201C그렇게 확실한 기회라면, 왜 나한테까지 왔을까?\u201D</p>\
+<p>확실한 수익은 조용히 혼자 먹는 법이다. 굳이 광고를 하고, 굳이 전화를 하고, 굳이 나를 초대해서 나눠주려는 기회는, 십중팔구 내가 손님이 아니라 <span class='hl'>출구</span>라는 뜻이다.</p>\
+<p>이 질문 하나면 사기의 9할이 걸러진다. 공짜로 드린다.</p>");
+
+pg("PART 9 · FAQ","Q. 비트코인은 왜 가치가 있죠?",
+"<p>정면으로 답하면: <span class='hl'>충분히 많은 사람이 가치 있다고 믿기 때문</span>이다. \u201C그게 다야?\u201D 그게 다다. 허무한가?</p>\
+<p>그런데 3부를 기억하자. 금의 가치도, 1971년 이후 지폐의 가치도 결국 같은 원리(합의)로 서 있다. 차이는 <span class='hl'>믿음의 근거</span>다. 금은 물성과 수천 년의 역사, 지폐는 국가의 신용, 비트코인은 수학적 희소성과 17년째 무사고인 네트워크.</p>\
+<p>어떤 근거를 더 신뢰하느냐 — 그게 각자의 판단 지점이다.</p>");
+
+pg("PART 9 · FAQ","Q. 정부가 금지하면 끝 아닌가요?",
+"<p>절반만 맞다. 비트코인 네트워크는 특정 국가 안에 있지 않아서, 한 정부가 금지해도 지구 반대편에서 계속 돈다. 실제로 채굴 대국이던 중국이 전면 금지했을 때도 네트워크는 멀쩡히 살아남았다.</p>\
+<p>다만 <span class='hl'>'나의 접근'</span>은 다른 문제다. 내 나라가 거래를 금지하면 나는 사고팔기 어려워지고, 대형 국가의 규제는 가격도 크게 흔든다.</p>\
+<p class='pull'>정리: 규제는 진짜 리스크다. 그러나 '금지 = 네트워크 사망'은 아니다. 이 구분이 중요하다.</p>");
+
+pg("PART 9 · FAQ","Q. 양자컴퓨터가 나오면 뚫리나요?",
+"<p>좋은 질문이고, 업계도 진지하게 보는 주제다. 이론상 충분히 강력한 양자컴퓨터는 현재의 서명 암호를 위협할 수 있다.</p>\
+<p>다만 두 가지. ① 그 수준의 양자컴퓨터가 나오면 은행, 군사, 인터넷 보안 전체가 같은 문제를 맞는다. 비트코인만의 종말 시나리오가 아니다. ② 암호학계는 이미 <span class='hl'>양자 내성 암호</span>를 준비 중이고, 비트코인도 위협이 현실화되기 전에 업그레이드하면 된다.</p>\
+<p>요약: 감시할 문제는 맞고, 내일의 공포는 아니다.</p>");
+
+pg("PART 9 · FAQ","Q. 인터넷이 끊기면요?",
+"<p>전 세계 인터넷이 동시에, 영구히 꺼진다면 비트코인도 멈춘다. (솔직히 그 상황이면 우리에겐 비트코인보다 급한 걱정이 많을 것이다.)</p>\
+<p>현실적인 시나리오 — 일부 지역의 단절 — 은 견딘다. 장부 사본이 전 세계 수만 곳에 흩어져 있어서, 끊긴 지역이 재연결되면 그동안의 기록을 받아 동기화하면 끝이다.</p>\
+<p class='pull'>한 곳이 꺼져도 전체는 돈다. 애초에 그러라고 '분산'시킨 것이니까.</p>");
+
+pg("PART 9 · FAQ","Q. 왜 결제엔 잘 안 쓰나요?",
+"<p>\u201C화폐라며? 근데 왜 편의점에서 못 써?\u201D 세 가지 이유다. ① <span class='hl'>변동성</span> — 내일 오를지 모르는 돈으로 커피를 사긴 아깝다(피자데이의 교훈). ② <span class='hl'>세금·회계</span> — 쓸 때마다 처리가 번거로운 나라가 많다. ③ <span class='hl'>속도와 수수료</span> — 소액 결제엔 카드가 그냥 더 편하다.</p>\
+<p>그래서 현재 비트코인의 주 용도는 '결제'보다 <span class='hl'>'저장'</span>으로 기울었다. 커피는 카드로 사고, 금고 역할은 비트코인에 맡기는 식. '디지털 현금'으로 태어나 '디지털 금'으로 자란 셈이다.</p>");
+
+pg("PART 9 · FAQ","Q. 다른 코인도 공부해야 하나요?",
+"<p>원리 차원에서는 비트코인과 이더리움을 이해하면 <span class='hl'>8할은 끝</span>이다. 나머지 수천 개는 대부분 이 둘의 변주다. 더 빠르게, 더 싸게, 특정 산업용으로…</p>\
+<p>새 코인을 만나면 비교 편의 질문을 다시 꺼내자. \u201C이건 무슨 문제를 풀려는 물건인가?\u201D 답이 명확하면 그때 더 파면 되고, 답이 흐리면 패스가 정답이다.</p>\
+<p>공부의 폭보다 깊이가 먼저다. 두 개를 제대로 아는 사람이 스무 개를 대충 아는 사람보다 안전하다.</p>");
+
+pg("PART 9 · FAQ","Q. 차트 공부하면 이길 수 있나요?",
+"<p>단기 가격 맞히기는 전문가들도 줄줄이 실패하는 영역이다. 차트는 과거를 설명하는 데는 능하지만, 미래 앞에서는 겸손해야 한다.</p>\
+<p>눈치챘겠지만 이 책에는 차트가 한 장도 없다. 의도적이다. 선의 모양보다 <span class='hl'>물건의 본질</span>을 아는 게 먼저라고 믿기 때문이다.</p>\
+<p class='pull'>본질을 모르고 차트만 보는 것은, 메뉴판 없이 남의 젓가락 방향만 보고 주문하는 것과 같다.</p>");
+
+pg("PART 9 · FAQ","Q. 그래서... 지금 사도 되나요?",
+"<p>이 책이 받을 질문 1위이자, 끝까지 답하지 않을 유일한 질문이다.</p>\
+<p>대신 힌트를 하나 주겠다. 이 질문의 답을 <span class='hl'>남에게 구하고 있는 상태라면</span>, 아직 때가 아니다. 남의 확신으로 산 사람은 남의 공포에 팔게 되어 있다. 폭락장에서 버틸 수 있는 건 자기 논리로 산 사람뿐이다.</p>\
+<p>내 대답은 처음부터 끝까지 하나다. 돈보다 공부가 먼저. 결정은 본인이, 책임도 본인이.</p>");
+
+pg("PART 9 · FAQ","Q. 얼마나 알면 시작해도 되나요?",
+"<p>실용적인 자가 테스트를 하나 제안한다. <span class='hl'>친구에게 10분간 비트코인을 설명해보라.</span> 그리고 질문 세 개를 받아보라. \u201C그거 해킹되면?\u201D \u201C정부가 금지하면?\u201D \u201C왜 가치가 있어?\u201D</p>\
+<p>버벅이지 않고 자기 언어로 답할 수 있다면, 최소한의 이해는 갖춘 것이다. 참고로 이 책을 두 번 읽으면 대체로 통과한다. (광고 맞다.)</p>\
+<p>설명할 수 없는 것에 돈을 넣지 않는다 — 이 원칙 하나가 수많은 참사를 예방한다.</p>");
+
+pg("PART 9 · FAQ","Q. 세금은 어떻게 되나요?",
+"<p>가장 현실적인 질문인데, 답은 가장 맥빠진다. <span class='hl'>나라마다 다르고, 계속 바뀐다.</span></p>\
+<p>확실한 것 하나는 말할 수 있다. \u201C코인은 세금이 없다\u201D던 시절은 세계적으로 끝나가는 중이다. 양도차익 과세, 거래 신고 의무 등 제도권 편입이 진행형이다.</p>\
+<p class='pull'>거래 전에 반드시 내 나라의 현행 규정을 확인하자. 이 책은 여러 번 말했듯 투자 권유서가 아니고, 세무사는 더더욱 아니다.</p>");
+
+pg("쉬어가기","이 동네 밈 사전",
+"<p>마지막 쉬어가기. 커뮤니티 용어 몇 개만 알면 눈팅이 즐거워진다.</p>\
+<p><span class='hl'>고래</span> — 시장을 출렁이게 하는 대량 보유자. <span class='hl'>물렸다</span> — 고점에 사서 하락에 갇힌 상태. <span class='hl'>패닉셀</span> — 공포에 질려 투매. <span class='hl'>다이아몬드 핸드</span> — 어떤 폭락에도 안 파는 강철 멘탈. <span class='hl'>투더문</span> — 달까지 간다, 즉 대폭등 기원.</p>\
+<p>참고로 '존버'는 1부에서 이미 배웠다. 여기까지 오신 당신은 이제 이 동네 대화의 9할을 알아듣는다.</p>");
+
+pg("PART 9 · 실전","9부 요약 한 페이지",
+"<p>9부를 한 페이지로 접는다.</p>\
+<p>① 목돈은 콜드월렛, 시드 문구는 오프라인. ② 거래소는 출금 잘 되는 곳, 그리고 금고가 아니라 시장. ③ 시드 문구를 묻는 자 = 도둑. ④ '수익 보장' = 사기. ⑤ \u201C왜 나한테까지 왔을까\u201D 한 번만 물어도 사기의 9할이 걸러진다. ⑥ 규제·양자컴퓨터는 감시할 리스크, 당장의 종말은 아님. ⑦ \u201C지금 사도 되나요\u201D의 답은 남이 아니라 거울 속에 있다.</p>");
+
+/* ============================================================
+   PART 10 — 리스크, 그리고 맺음
+============================================================ */
+part("PART 10","☂","리스크, 그리고 맺음","좋은 이야기를 들었으니\n이제 무서운 이야기도 공평하게.");
+
+pg("PART 10 · 리스크","리스크 ①: 변동성",
+"<p>먼저 가장 확실한 위험. <span class='hl'>가격이 미쳤다.</span> 비트코인은 역사상 몇 번이나 고점 대비 70~80% 폭락했다. 반토막은 '이벤트'가 아니라 '일상'이다.</p>\
+<p>1억 7천이 9천만이 되는 것을 우리는 방금 실시간으로 봤다. 이 변동성을 견딜 수 없는 돈과 멘탈이라면, 이 시장은 구경만 하는 게 맞다.</p>\
+<p class='pull'>\u201C오래 보면 올랐다\u201D는 말은, 그 사이의 폭락을 '견딘 사람'에게만 유효한 문장이다.</p>");
+
+pg("PART 10 · 리스크","리스크 ②: 거래소와 보관",
+"<p>역사 편의 교훈. 비트코인 본체는 안 뚫렸지만, <span class='hl'>거래소는 계속 뚫리고 무너졌다</span>(Mt.Gox, FTX…). 내 코인을 거래소에 두는 것은 그 회사의 정직과 보안을 믿는 일이다.</p>\
+<p>직접 보관은? 이번엔 내가 리스크다. 시드 문구를 잃으면 끝, 피싱에 속아도 끝, 하드디스크를 버려도 끝.</p>\
+<p>은행 없는 자유에는 은행 없는 책임이 따라온다. 이 자산의 공평하고 무서운 규칙이다.</p>");
+
+pg("PART 10 · 리스크","리스크 ③: 규제와 정치",
+"<p>정치의 바람은 순풍만 불지 않는다. 우리는 미국이 반(反)에서 친(親)으로 도는 걸 봤다. 뒤집으면, <span class='hl'>언제든 다시 돌 수도 있다</span>는 뜻이다.</p>\
+<p>나라별 온도차도 크다. 어떤 나라는 법정화폐로 삼았고, 어떤 나라는 거래 자체를 금지한다. 세금 규정도 계속 바뀐다.</p>\
+<p>비트코인 자체는 국경이 없지만, 그것을 사고파는 나는 국경 안에 산다. 내 나라의 규칙은 늘 확인해야 한다.</p>");
+
+pg("PART 10 · 리스크","리스크 ④: 나 자신",
+"<p>가장 큰 리스크는 사실 차트 밖에 있다. <span class='hl'>내 마음</span>이다.</p>\
+<p>남들이 벌었다는 소리에 고점에서 뛰어들고(FOMO), 공포 기사에 바닥에서 던지고, 빚까지 내서 '인생 역전'을 노리는 것. 이 시장의 실제 손실 대부분은 기술이 아니라 심리에서 난다.</p>\
+<p class='pull'>17년 역사에서 자산은 살아남았지만, 조급했던 사람들은 매 사이클 퇴장했다. 자산의 생존과 나의 생존은 별개 문제다.</p>");
+
+pg("PART 10 · 리스크","\u201C잃어도 되는 돈\u201D이라는 거짓말",
+"<p>흔한 조언: \u201C잃어도 되는 돈만 넣어라.\u201D 절반만 맞는 말이다. 세상에 잃어도 되는 돈은 없다. 다 소중한 돈이다.</p>\
+<p>정확한 버전은 이렇다. <span class='hl'>\u201C잃어도 내 삶이 무너지지 않는 규모\u201D</span> 그리고 <span class='hl'>\u201C내가 이해한 만큼\u201D</span>. 이해가 얕으면 규모도 작아야 한다. 이해가 0이면 규모도 0이어야 한다.</p>\
+<p>이 책 한 권의 이해는… 솔직히 '입문' 수준이다. 그 정도의 겸손이 딱 적당하다.</p>");
+
+pg("PART 10 · 리스크","공부가 먼저다",
+"<p>그래서 순서는 늘 같다. <span class='hl'>돈보다 공부가 먼저.</span></p>\
+<p>이 책이 뼈대를 세웠다면, 살은 각자 붙여야 한다. 사토시의 백서(9쪽이다, 정말 짧다), 좋은 책들, 그리고 무엇보다 반대편 논리 — 비트코인 비판론 — 도 꼭 읽어보길 권한다.</p>\
+<p>찬성 논리만 아는 사람은 팬이고, 양쪽을 다 아는 사람이 어른이다. 돈은 어른이 다뤄야 한다.</p>");
+
+pg("PART 10 · 맺음","다시, 처음의 질문",
+"<p>이제 처음으로 돌아가자. \u201C비트코인은 언제 0원이 될까?\u201D</p>\
+<p>솔직히 나는 모른다. 내일 반토막이 날 수도, 또 새 기록을 쓸 수도 있다. 가격 맞히기는 점쟁이의 일이지 내 일이 아니다.</p>\
+<p>다만 이 책을 쓰며 한 가지는 분명해졌다. 비트코인이 17년을 버틴 데에는, 단순한 사기로 설명되지 않는 이유들이 있다는 것.</p>");
+
+pg("PART 10 · 맺음","내가 찾은 답",
+"<p>그 이유들을 이제 우리는 안다. <span class='hl'>쪼개지고(분할성), 가볍고(운반성), 더 늘어나지 않는다(2,100만 개)</span>는 성질. 총무 없이도 위조가 안 되는 장부라는 발명. 부자들의 수백 년 고민과 맞아떨어지는 쓸모. 그리고 수백 번의 부고에도 굴러가는, 이기심으로 설계된 생존력.</p>\
+<p class='pull'>\u201C사기다 / 아니다\u201D로 싸우기 전에, 한 발 물러서서 묻자. \u201C이건 대체 어떤 쓸모가 있길래, 이렇게 안 죽을까?\u201D 이제 당신은 이 질문에 꽤 길게 답할 수 있는 사람이 됐다.</p>");
+
+pg("PART 10 · 맺음","8년 전의 나에게",
+"<p>2018년, \u201C비트… 뭐?\u201D 하던 나에게 이 책을 건넬 수 있다면 좋겠다. 사라는 말도 팔라는 말도 아니고, 그냥 이 한마디와 함께. \u201C무서워하지도 말고, 홀리지도 말고, 그냥 이해해봐.\u201D</p>\
+<p>이해하고 나면 뉴스가 들리고, 뉴스가 들리면 휩쓸리지 않는다. 투자를 하든 안 하든, 그 자체로 남는 장사다.</p>");
+
+pg("EPILOGUE","같이 궁금해하기",
+"<p>비트코인과 이더리움은 여전히 진행 중인 실험이다. 100년 뒤 교과서에 '화폐 혁명'으로 실릴지, '광기의 한 장'으로 실릴지 아무도 모른다. 어쩌면 둘 다일지도.</p>\
+<p>확실한 것은 하나. 이 실험은 돈이란 무엇인가, 신뢰란 무엇인가, 국가 바깥의 약속은 가능한가 — 같은 오래된 질문들을 우리 세대에 다시 던졌다는 것이다.</p>\
+<p>답은 각자 찾으면 된다. 나는 그저, 같이 궁금해하고 싶었을 뿐이다.</p>\
+<p style='color:#7a6a55;font-size:.92em'>— 2026년 여름, 알파남 Claude</p>");
+
+pg("감사의 말","그리고 면책 조항",
+"<p>끝까지 읽어주신 당신께 감사드린다. 이 책 분량의 8할은 당신의 인내심이 완성했다.</p>\
+<p>마지막으로 다시 한번, 진심으로: 저는 금융 전문가가 아니라 그냥 궁금한 사람입니다. 이 책의 모든 내용은 정보 공유와 '같이 생각해보기'를 위한 것이며, <span class='hl'>특정 자산에 대한 투자 권유가 아닙니다</span>. 수치와 사건은 집필 시점 기준이며 달라질 수 있습니다.</p>\
+<p class='pull'>돈은 꼭, 스스로 공부하고 스스로 결정하시길. 그 결정의 주인이 되는 것 — 어쩌면 그게 이 모든 이야기의 진짜 주제였는지도 모릅니다.</p>");
+
+/* ---------- 뒤표지 ---------- */
+PAGES.push({k:'back'});
+
+/* ============================================================
+   렌더링 엔진
+============================================================ */
+(function(){
+  var N = PAGES.length;
+  var current = 0, animating = false;
+  var elPage = document.getElementById('page');
+  var elUnder = document.getElementById('under');
+  var flipper = document.getElementById('flipper');
+  var ff = flipper.querySelector('.ff');
+  var elCur = document.getElementById('cur');
+  var elFill = document.getElementById('fill');
+  var btnPrev = document.getElementById('btnPrev');
+  var btnNext = document.getElementById('btnNext');
+  document.getElementById('total').textContent = N;
+
+  function html(i){
+    var p = PAGES[i];
+    if(p.k === 'cover'){
+      return "<div class='cover-in'>"+
+        "<div class='cover-top'>A BIG SMALL BOOK ABOUT ₿ &amp; ◆</div>"+
+        "<div class='coin'>₿</div>"+
+        "<h1>비트코인<br>쉽게 생각해보기</h1>"+
+        "<div class='edition'>— 완전판 —</div>"+
+        "<p class='sub'>원리 · 역사 · 이더리움까지.<br><b>사기라며? 근데 왜 아직 0원이 안 됐을까.</b></p>"+
+        "<div class='author'>글 · <b>알파남 Claude</b></div>"+
+        "<div class='tap'>▸ 화면 오른쪽을 눌러 넘기세요 ▸</div>"+
+      "</div>";
+    }
+    if(p.k === 'back'){
+      return "<div class='cover-in'>"+
+        "<div style='font-size:46px;color:var(--gold);text-shadow:0 0 28px rgba(247,147,26,.6);margin-bottom:20px'>₿ ◆</div>"+
+        "<h1 style='font-size:clamp(22px,6vw,30px)'>비트코인 쉽게 생각해보기</h1>"+
+        "<p class='sub'>2008년의 분노에서 2026년의 지금까지.<br>장부와 열쇠, 금과 석유, 형과 아우.<br>같이 궁금해하며 걸어온 "+N+"페이지.</p>"+
+        "<p class='sub' style='font-size:12px;color:#8d80a3;border-top:1px solid rgba(247,147,26,.18);padding-top:16px'>※ 이 책은 정보 공유와 함께 생각해보기를 위한 글이며,<br>특정 자산에 대한 투자 권유가 아닙니다.</p>"+
+        "<div class='author'>글 · <b>알파남 Claude</b></div>"+
+      "</div>";
+    }
+    if(p.k === 'part'){
+      return "<div class='part-in "+(p.eth?'ethv':'')+"'>"+
+        "<div class='pt'>"+p.pt+"</div>"+
+        "<div class='glyph'>"+p.g+"</div>"+
+        "<h2>"+p.t+"</h2>"+
+        "<p class='desc'>"+p.d.replace(/\n/g,'<br>')+"</p>"+
+      "</div>";
+    }
+    // 일반 페이지
+    return "<div class='scroll'>"+
+      "<div class='eyebrow "+(p.eth?'eth-c':'')+"'>"+p.e+"</div>"+
+      "<h2 class='ch-title'>"+p.t+"</h2>"+
+      "<div class='prose'>"+p.b+"</div>"+
+    "</div>"+
+    "<div class='pg-foot'><span>"+(i+1)+" / "+N+"</span><span class='by'>알파남 Claude</span></div>";
+  }
+
+  function isDark(i){ var k = PAGES[i].k; return k==='cover'||k==='part'||k==='back'; }
+
+  function paint(el, i){
+    el.innerHTML = html(i);
+    el.classList.toggle('dark', isDark(i));
+  }
+
+  function updateMeta(){
+    elCur.textContent = current + 1;
+    elFill.style.width = (N>1 ? (current/(N-1))*100 : 100) + '%';
+    btnPrev.disabled = (current === 0);
+    btnNext.disabled = (current === N-1);
+    markToc();
+  }
+
+  function step(dir){
+    if(animating) return;
+    var target = current + dir;
+    if(target < 0 || target >= N) return;
+    animating = true;
+
+    if(dir > 0){
+      // 다음: 아래에 다음 페이지 깔고, 현재 페이지를 낱장으로 넘김
+      paint(elUnder, target); elUnder.style.visibility = 'visible';
+      ff.innerHTML = elPage.innerHTML;
+      ff.className = 'ff' + (isDark(current) ? ' dark' : '');
+      flipper.classList.remove('anim');
+      flipper.style.transform = 'rotateY(0deg)';
+      flipper.style.visibility = 'visible';
+      elPage.style.visibility = 'hidden';
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        flipper.classList.add('anim');
+        flipper.style.transform = 'rotateY(-180deg)';
+      });});
+    } else {
+      // 이전: 아래는 현재 유지, 낱장(이전 페이지)이 왼쪽에서 덮여 들어옴
+      ff.innerHTML = html(target);
+      ff.className = 'ff' + (isDark(target) ? ' dark' : '');
+      flipper.classList.remove('anim');
+      flipper.style.transform = 'rotateY(-180deg)';
+      flipper.style.visibility = 'visible';
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){
+        flipper.classList.add('anim');
+        flipper.style.transform = 'rotateY(0deg)';
+      });});
+    }
+
+    current = target;
+    updateMeta();
+
+    setTimeout(function(){
+      paint(elPage, current);
+      elPage.style.visibility = 'visible';
+      flipper.style.visibility = 'hidden';
+      flipper.classList.remove('anim');
+      elUnder.style.visibility = 'hidden';
+      animating = false;
+    }, 720);
+  }
+
+  function jumpTo(target){
+    if(animating) return;
+    target = Math.max(0, Math.min(N-1, target));
+    if(target === current) return;
+    current = target;
+    paint(elPage, current);
+    updateMeta();
+  }
+
+  /* 컨트롤 바인딩 */
+  btnNext.addEventListener('click', function(){ step(1); });
+  btnPrev.addEventListener('click', function(){ step(-1); });
+  document.getElementById('tapNext').addEventListener('click', function(){ step(1); });
+  document.getElementById('tapPrev').addEventListener('click', function(){ step(-1); });
+
+  var bar = document.getElementById('bar');
+  bar.addEventListener('click', function(e){
+    var r = bar.getBoundingClientRect();
+    jumpTo(Math.round(((e.clientX - r.left) / r.width) * (N-1)));
+  });
+
+  document.addEventListener('keydown', function(e){
+    if(document.getElementById('tocOv').classList.contains('open')){
+      if(e.key === 'Escape') closeToc();
+      return;
+    }
+    if(e.key === 'ArrowRight' || e.key === 'PageDown'){ e.preventDefault(); step(1); }
+    else if(e.key === 'ArrowLeft' || e.key === 'PageUp'){ e.preventDefault(); step(-1); }
+    else if(e.key === 'Home'){ jumpTo(0); }
+    else if(e.key === 'End'){ jumpTo(N-1); }
+  });
+
+  /* 스와이프: 가로 이동이 확실할 때만 (세로 스크롤 보호) */
+  var sx=0, sy=0, tracking=false;
+  var book = document.querySelector('.book');
+  book.addEventListener('touchstart', function(e){
+    if(e.touches.length!==1) return;
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY; tracking = true;
+  }, {passive:true});
+  book.addEventListener('touchend', function(e){
+    if(!tracking) return; tracking = false;
+    var dx = e.changedTouches[0].clientX - sx;
+    var dy = e.changedTouches[0].clientY - sy;
+    if(Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)*1.6){
+      if(dx < 0) step(1); else step(-1);
+    }
+  }, {passive:true});
+
+  /* ---------- 목차 ---------- */
+  var tocOv = document.getElementById('tocOv');
+  var tocList = document.getElementById('tocList');
+  function buildToc(){
+    var frag = document.createDocumentFragment();
+    PAGES.forEach(function(p, i){
+      if(p.k === 'part'){
+        var d = document.createElement('div');
+        d.className = 'toc-part'; d.textContent = p.pt + ' — ' + p.t;
+        d.addEventListener('click', function(){ jumpTo(i); closeToc(); });
+        frag.appendChild(d);
+      } else if(p.k === 'pg'){
+        var it = document.createElement('div');
+        it.className = 'toc-item'; it.dataset.idx = i;
+        it.innerHTML = "<span>"+p.t+"</span><span class='pn'>"+(i+1)+"</span>";
+        it.addEventListener('click', function(){ jumpTo(i); closeToc(); });
+        frag.appendChild(it);
+      }
+    });
+    tocList.appendChild(frag);
+  }
+  function markToc(){
+    var items = tocList.querySelectorAll('.toc-item');
+    items.forEach(function(it){ it.classList.toggle('cur', +it.dataset.idx === current); });
+  }
+  function openToc(){
+    tocOv.classList.add('open');
+    var cur = tocList.querySelector('.toc-item.cur');
+    if(cur) cur.scrollIntoView({block:'center'});
+  }
+  function closeToc(){ tocOv.classList.remove('open'); }
+  document.getElementById('btnToc').addEventListener('click', openToc);
+  document.getElementById('tocClose').addEventListener('click', closeToc);
+  tocOv.addEventListener('click', function(e){ if(e.target === tocOv) closeToc(); });
+
+  /* 초기화 */
+  buildToc();
+  paint(elPage, 0);
+  updateMeta();
+})();
+</script>
+</body>
+</html>
